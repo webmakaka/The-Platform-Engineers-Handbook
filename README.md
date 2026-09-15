@@ -3,8 +3,10 @@
 **Original repo:**  
 https://github.com/achankra/peh
 
+**Additional resources, videos, case studies, and interactive tools are available at:**
+https://peh-packt.platformetrics.com/
 
-Chapter 1:  
+**Chapter 1:**  
 https://www.youtube.com/watch?v=4_xMX8Jom6o
 
 
