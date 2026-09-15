@@ -1,4 +1,4 @@
-# [Book][Ajay Chankramath] The Platform Engineer's Handbook — Companion Code [ENG, 2026]
+# [Book][Ajay Chankramath] The Platform Engineer's Handbook [ENG, 2026]
 
 <img src="./img/The-Platform-Engineers-Handbook-Cover.jpg" alt="Строим LLM с нуля" height="256px" align="right">
 
@@ -11,15 +11,9 @@ https://github.com/achankra/peh
 https://peh-packt.platformetrics.com/
 
 
-This repository contains the companion code for all 14 chapters plus Appendix A of *The Platform Engineer's Handbook* (Packt Publishing). Each chapter lives in its own `ChNN/` folder with a dedicated `README.md` covering step-by-step instructions, prerequisites, and code-to-chapter mappings.
-
-Before diving into individual chapters, read through this document to get your workstation ready and to understand how certain tools thread across the entire book.
-
 <br/>
 
-
 ## Part 1: Designing, Building, and Deploying the Core Engineering Platform
-
 
 ### Chapter 1: Platform Engineering: Laying the Groundwork
 
@@ -30,7 +24,6 @@ https://www.youtube.com/watch?v=4_xMX8Jom6o
 * Source Repository Topology
 * Ensuring Commit Conventions
 * Branching and Release Tagging Strategy
-
 
 ### Chapter 2: Scalable Platform Runtime with Kubernetes and Service Mesh
 
@@ -123,7 +116,6 @@ https://www.youtube.com/watch?v=4_xMX8Jom6o
 * Publishing templates to the catalog
 * Testing starter kit templates
 * Creating a new service with a starter kit
-
 
 ## Part 3: Scaling, Maturing, and Evolving Your Platform
 
