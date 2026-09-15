@@ -1,4 +1,12 @@
-# The Platform Engineer's Handbook — Companion Code
+# [Book][Ajay Chankramath] The Platform Engineer's Handbook — Companion Code [ENG, 2026]
+
+**Original repo:**  
+https://github.com/achankra/peh
+
+
+Chapter 1:  
+https://www.youtube.com/watch?v=4_xMX8Jom6o
+
 
 This repository contains the companion code for all 14 chapters plus Appendix A of *The Platform Engineer's Handbook* (Packt Publishing). Each chapter lives in its own `ChNN/` folder with a dedicated `README.md` covering step-by-step instructions, prerequisites, and code-to-chapter mappings.
 
