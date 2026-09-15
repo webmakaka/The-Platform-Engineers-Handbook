@@ -1,20 +1,5 @@
 # [Book][Ajay Chankramath] The Platform Engineer's Handbook — Companion Code [ENG, 2026]
 
-**Original repo:**  
-https://github.com/achankra/peh
-
-**Additional resources, videos, case studies, and interactive tools are available at:**
-https://peh-packt.platformetrics.com/
-
-**Chapter 1:**  
-https://www.youtube.com/watch?v=4_xMX8Jom6o
-
-
-This repository contains the companion code for all 14 chapters plus Appendix A of *The Platform Engineer's Handbook* (Packt Publishing). Each chapter lives in its own `ChNN/` folder with a dedicated `README.md` covering step-by-step instructions, prerequisites, and code-to-chapter mappings.
-
-Before diving into individual chapters, read through this document to get your workstation ready and to understand how certain tools thread across the entire book.
-
----
 
 ## Foundational Tools
 
@@ -360,15 +345,3 @@ Open [http://localhost:3000](http://localhost:3000) and log in with username `ad
 
 Each `ChNN/` folder contains its own `README.md` with full prerequisites, step-by-step instructions, expected outputs, and troubleshooting.
 
----
-
-## Companion Website
-
-Additional resources, videos, case studies, and interactive tools are available at:
-
-**https://peh-packt.platformetrics.com/**
-
----
-
-**Author:** Ajay Chankramath (ajay@platformetrics.com)
-**Book:** The Platform Engineer's Handbook (Packt Publishing)
