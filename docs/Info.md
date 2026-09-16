@@ -1,75 +1,75 @@
 # [Book][Ajay Chankramath] The Platform Engineer's Handbook — Companion Code [ENG, 2026]
 
-
 ## Foundational Tools
 
 Chapter 1 covers Python, Git, Bitwarden CLI, Pulumi basics, and pre-commit. The tools below are **not** set up in Chapter 1 but are required by two or more later chapters. Install them once and you're covered for the rest of the book.
 
 ### Kubernetes & Container Runtime
 
-| Tool | Version | Install | Used In |
-|------|---------|---------|---------|
-| Docker | 20.10+ | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) | Ch5, Ch8, Ch10, Ch13 |
-| Kind | 0.20+ | `brew install kind` / `go install sigs.k8s.io/kind` | Ch2 (creates your first cluster) |
-| kubectl | 1.26+ | `brew install kubectl` / [kubernetes.io/docs/tasks/tools](https://kubernetes.io/docs/tasks/tools/) | Ch2–Ch13 |
-| Helm | 3.0+ | `brew install helm` / [helm.sh/docs/intro/install](https://helm.sh/docs/intro/install/) | Ch2, Ch6, Ch8, Ch9, Ch10, Ch12, Ch13 |
-| Kustomize | 5.0+ | `brew install kustomize` | Ch2 |
+| Tool      | Version | Install                                                                                            | Used In                              |
+| --------- | ------- | -------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Docker    | 20.10+  | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/)                                  | Ch5, Ch8, Ch10, Ch13                 |
+| Kind      | 0.20+   | `brew install kind` / `go install sigs.k8s.io/kind`                                                | Ch2 (creates your first cluster)     |
+| kubectl   | 1.26+   | `brew install kubectl` / [kubernetes.io/docs/tasks/tools](https://kubernetes.io/docs/tasks/tools/) | Ch2–Ch13                             |
+| Helm      | 3.0+    | `brew install helm` / [helm.sh/docs/intro/install](https://helm.sh/docs/intro/install/)            | Ch2, Ch6, Ch8, Ch9, Ch10, Ch12, Ch13 |
+| Kustomize | 5.0+    | `brew install kustomize`                                                                           | Ch2                                  |
 
 Docker and kubectl are used in almost every chapter from Chapter 2 onwards. Install these first.
 
 ### GitOps & Deployment
 
-| Tool | Version | Install | Used In |
-|------|---------|---------|---------|
-| Flux CLI | 2.0+ | `brew install fluxcd/tap/flux` / `curl -s https://fluxcd.io/install.sh \| sudo bash` | Ch2 |
-| Istio (`istioctl`) | 1.10+ | [istio.io/latest/docs/setup/getting-started](https://istio.io/latest/docs/setup/getting-started/) | Ch2, Ch8 |
+| Tool               | Version | Install                                                                                           | Used In  |
+| ------------------ | ------- | ------------------------------------------------------------------------------------------------- | -------- |
+| Flux CLI           | 2.0+    | `brew install fluxcd/tap/flux` / `curl -s https://fluxcd.io/install.sh \| sudo bash`              | Ch2      |
+| Istio (`istioctl`) | 1.10+   | [istio.io/latest/docs/setup/getting-started](https://istio.io/latest/docs/setup/getting-started/) | Ch2, Ch8 |
 
 ### Policy & Security
 
-| Tool | Version | Install | Used In |
-|------|---------|---------|---------|
-| OPA Gatekeeper | 3.14+ | Installed via Helm into the cluster | Ch3, Ch11 |
-| conftest | 0.41+ | `brew install conftest` | Ch11 |
-| OPA CLI | Latest | `brew install opa` | Ch11 |
-| cert-manager | Latest | Installed via Helm into the cluster | Ch3, Ch6 |
+| Tool           | Version | Install                             | Used In   |
+| -------------- | ------- | ----------------------------------- | --------- |
+| OPA Gatekeeper | 3.14+   | Installed via Helm into the cluster | Ch3, Ch11 |
+| conftest       | 0.41+   | `brew install conftest`             | Ch11      |
+| OPA CLI        | Latest  | `brew install opa`                  | Ch11      |
+| cert-manager   | Latest  | Installed via Helm into the cluster | Ch3, Ch6  |
 
 ### Observability
 
-| Tool | Version | Install | Used In |
-|------|---------|---------|---------|
-| Prometheus | 2.30+ | Installed via Helm (kube-prometheus-stack) | Ch4, Ch8, Ch11, Ch12, Ch13 |
-| Grafana | 8.0+ | Bundled with kube-prometheus-stack | Ch4, Ch11, Ch12 |
+| Tool       | Version | Install                                    | Used In                    |
+| ---------- | ------- | ------------------------------------------ | -------------------------- |
+| Prometheus | 2.30+   | Installed via Helm (kube-prometheus-stack) | Ch4, Ch8, Ch11, Ch12, Ch13 |
+| Grafana    | 8.0+    | Bundled with kube-prometheus-stack         | Ch4, Ch11, Ch12            |
 
 ### Infrastructure & Platform
 
-| Tool | Version | Install | Used In |
-|------|---------|---------|---------|
-| Pulumi | 3.0+ | `brew install pulumi/tap/pulumi` / `curl -fsSL https://get.pulumi.com \| sh` | Ch1, Ch2 |
-| Crossplane + CLI | 1.14+ | Installed via Helm; CLI: `curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh \| sh` | Ch9 |
-| Backstage | 1.20+ | `npx @backstage/create-app@latest` | Ch6, Ch10 |
-| Keycloak | 20+ | Docker image or Helm chart | Ch3, Ch6 |
+| Tool             | Version | Install                                                                                                             | Used In   |
+| ---------------- | ------- | ------------------------------------------------------------------------------------------------------------------- | --------- |
+| Pulumi           | 3.0+    | `brew install pulumi/tap/pulumi` / `curl -fsSL https://get.pulumi.com \| sh`                                        | Ch1, Ch2  |
+| Crossplane + CLI | 1.14+   | Installed via Helm; CLI: `curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh \| sh` | Ch9       |
+| Backstage        | 1.20+   | `npx @backstage/create-app@latest`                                                                                  | Ch6, Ch10 |
+| Keycloak         | 20+     | Docker image or Helm chart                                                                                          | Ch3, Ch6  |
 
 ### Node.js Ecosystem
 
-| Tool | Version | Install | Used In |
-|------|---------|---------|---------|
-| Node.js | 20+ | [nodejs.org](https://nodejs.org/) | Ch5, Ch7, Ch10 |
-| npm | 9+ | Bundled with Node.js | Ch5, Ch7, Ch10 |
-| Yeoman | Latest | `npm install -g yo` | Ch10 |
-| Renovate | Latest | GitHub App (recommended) or `npm install -g renovate` | Ch10 |
+| Tool     | Version | Install                                               | Used In        |
+| -------- | ------- | ----------------------------------------------------- | -------------- |
+| Node.js  | 20+     | [nodejs.org](https://nodejs.org/)                     | Ch5, Ch7, Ch10 |
+| npm      | 9+      | Bundled with Node.js                                  | Ch5, Ch7, Ch10 |
+| Yeoman   | Latest  | `npm install -g yo`                                   | Ch10           |
+| Renovate | Latest  | GitHub App (recommended) or `npm install -g renovate` | Ch10           |
 
 ### Resilience & Cost (Chapters 12–13)
 
-| Tool | Version | Install | Used In |
-|------|---------|---------|---------|
-| Sloth | Latest | `go install github.com/slok/sloth/cmd/sloth@latest` | Ch13 |
-| Velero | 1.12+ | `brew install velero` / [velero.io/docs/install-overview](https://velero.io/docs/main/basic-install/) | Ch13 |
-| Chaos Mesh | Latest | Installed via Helm | Ch13 |
-| OpenCost | Latest | Installed via `install-opencost.sh` (Ch12) | Ch12 |
-| VPA | Latest | `git clone https://github.com/kubernetes/autoscaler.git && kubectl apply -f autoscaler/vertical-pod-autoscaler/deploy/` | Ch12 |
-| Metrics Server | Latest | `kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml` | Ch12 |
+| Tool           | Version | Install                                                                                                                 | Used In |
+| -------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- | ------- |
+| Sloth          | Latest  | `go install github.com/slok/sloth/cmd/sloth@latest`                                                                     | Ch13    |
+| Velero         | 1.12+   | `brew install velero` / [velero.io/docs/install-overview](https://velero.io/docs/main/basic-install/)                   | Ch13    |
+| Chaos Mesh     | Latest  | Installed via Helm                                                                                                      | Ch13    |
+| OpenCost       | Latest  | Installed via `install-opencost.sh` (Ch12)                                                                              | Ch12    |
+| VPA            | Latest  | `git clone https://github.com/kubernetes/autoscaler.git && kubectl apply -f autoscaler/vertical-pod-autoscaler/deploy/` | Ch12    |
+| Metrics Server | Latest  | `kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml`           | Ch12    |
 
 > **Kind cluster note:** Metrics Server requires a TLS patch on Kind clusters:
+>
 > ```bash
 > kubectl patch deployment metrics-server -n kube-system \
 >   --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
@@ -77,11 +77,11 @@ Docker and kubectl are used in almost every chapter from Chapter 2 onwards. Inst
 
 ### AI & ML (Chapter 14)
 
-| Tool | Version | Install | Used In |
-|------|---------|---------|---------|
-| LangChain | 0.1+ | `pip3 install langchain` | Ch14 |
-| ChromaDB | 0.3.21+ | `pip3 install chromadb` | Ch14 |
-| Ollama (optional) | Latest | [ollama.ai](https://ollama.ai/) | Ch14 |
+| Tool              | Version | Install                         | Used In |
+| ----------------- | ------- | ------------------------------- | ------- |
+| LangChain         | 0.1+    | `pip3 install langchain`        | Ch14    |
+| ChromaDB          | 0.3.21+ | `pip3 install chromadb`         | Ch14    |
+| Ollama (optional) | Latest  | [ollama.ai](https://ollama.ai/) | Ch14    |
 
 ---
 
@@ -96,13 +96,13 @@ Several tools are introduced in an early chapter and then quietly expected in la
 
 Bitwarden is the book's secrets manager. Chapter 1 walks you through account creation and the CLI install, then each chapter below has a `load-secrets.sh` script that pulls credentials from your vault instead of requiring manual `export` commands.
 
-| Chapter | Script | Vault Item | Secrets Loaded |
-|---------|--------|------------|----------------|
-| Ch3 | `load-secrets.sh` | `peh-keycloak` | `KEYCLOAK_ADMIN`, `KEYCLOAK_PASSWORD`, `KEYCLOAK_URL` |
-| Ch7 | `load-secrets.sh` | `peh-github` | `GITHUB_TOKEN`, `GITHUB_ORG` |
-| Ch9 | `load-secrets.sh` | `peh-db` | `POSTGRES_PASSWORD` |
-| Ch10 | `load-secrets.sh` | `peh-backstage` | `BACKSTAGE_URL`, `BACKSTAGE_TOKEN` |
-| Ch14 | `load-secrets.sh` | `peh-anthropic` | `ANTHROPIC_API_KEY`, `PINECONE_API_KEY` |
+| Chapter | Script            | Vault Item      | Secrets Loaded                                        |
+| ------- | ----------------- | --------------- | ----------------------------------------------------- |
+| Ch3     | `load-secrets.sh` | `peh-keycloak`  | `KEYCLOAK_ADMIN`, `KEYCLOAK_PASSWORD`, `KEYCLOAK_URL` |
+| Ch7     | `load-secrets.sh` | `peh-github`    | `GITHUB_TOKEN`, `GITHUB_ORG`                          |
+| Ch9     | `load-secrets.sh` | `peh-db`        | `POSTGRES_PASSWORD`                                   |
+| Ch10    | `load-secrets.sh` | `peh-backstage` | `BACKSTAGE_URL`, `BACKSTAGE_TOKEN`                    |
+| Ch14    | `load-secrets.sh` | `peh-anthropic` | `ANTHROPIC_API_KEY`, `PINECONE_API_KEY`               |
 
 Every `load-secrets.sh` sources the shared `bw-helper.sh` from Chapter 1. If you chose not to use Bitwarden, each chapter README also shows the manual `export` commands.
 
@@ -244,24 +244,25 @@ kind create cluster --name peh --config Ch02/kind-config.yaml
 ```
 
 > **Note:** If you don't have a `kind-config.yaml`, create one with ingress port mappings:
+>
 > ```yaml
 > kind: Cluster
 > apiVersion: kind.x-k8s.io/v1alpha4
 > nodes:
-> - role: control-plane
->   kubeadmConfigPatches:
->   - |
->     kind: InitConfiguration
->     nodeRegistration:
->       kubeletExtraArgs:
->         node-labels: "ingress-ready=true"
->   extraPortMappings:
->   - containerPort: 80
->     hostPort: 8080
->     protocol: TCP
->   - containerPort: 443
->     hostPort: 8443
->     protocol: TCP
+>   - role: control-plane
+>     kubeadmConfigPatches:
+>       - |
+>         kind: InitConfiguration
+>         nodeRegistration:
+>           kubeletExtraArgs:
+>             node-labels: "ingress-ready=true"
+>     extraPortMappings:
+>       - containerPort: 80
+>         hostPort: 8080
+>         protocol: TCP
+>       - containerPort: 443
+>         hostPort: 8443
+>         protocol: TCP
 > ```
 
 ### 3. Redeploy In-Cluster Services
@@ -344,4 +345,3 @@ Open [http://localhost:3000](http://localhost:3000) and log in with username `ad
 ```
 
 Each `ChNN/` folder contains its own `README.md` with full prerequisites, step-by-step instructions, expected outputs, and troubleshooting.
-
