@@ -1,6 +1,6 @@
 # [Book][Ajay Chankramath] The Platform Engineer's Handbook [ENG, 2026]
 
-<img src="./img/The-Platform-Engineers-Handbook-Cover.jpg" alt="Строим LLM с нуля" height="256px" align="right">
+<img src="./img/The-Platform-Engineers-Handbook-Cover.jpg" alt="The Platform Engineer's Handbook" height="256px" align="right">
 
 <br/>
 
@@ -15,8 +15,12 @@ https://peh-packt.platformetrics.com/
 
 ## Part 1: Designing, Building, and Deploying the Core Engineering Platform
 
+**Bitwarden Download and Keys**  
+https://www.youtube.com/watch?v=dJECe5bUJW0
+
 ### Chapter 1: Platform Engineering: Laying the Groundwork
 
+**Chapter 1**  
 https://www.youtube.com/watch?v=4_xMX8Jom6o
 
 * Core Design Principles

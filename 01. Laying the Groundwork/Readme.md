@@ -1,10 +1,18 @@
-# Chapter 1: Laying the Groundwork - Code Examples
+# Chapter 1: Laying the Groundwork
 
-This folder contains practical code examples and tools for Chapter 1 of "The Platform Engineer's Handbook," covering platform-as-a-product principles, design principles, release workflows, and platform team setup.
+<br/>
 
-## Overview
+### Core Design Principles
 
-Chapter 1 establishes the foundational concepts for platform engineering, including treating your platform as a product, implementing core design principles (self-service, guardrails, golden paths, extensibility, observability, and security), designing effective release workflows with approval gates, and structuring platform teams using team topologies.
+<img src="../img/pic01-01.png" alt="Chapter 1: Laying the Groundwork: Core Design Principles">
+
+
+<br/>
+
+### The Tool Stack
+
+<img src="../img/pic01-02.png" alt="Chapter 1: Laying the Groundwork: The Tool Stack">
+
 
 ---
 
@@ -78,7 +86,7 @@ This section maps each code file to its corresponding chapter concept and usage:
 Install dependencies using pip:
 
 ```bash
-pip install pyyaml pytest
+$ pip install pyyaml pytest
 ```
 
 **Package Details:**
@@ -645,80 +653,3 @@ Effective platform teams use team topologies to define:
 - **Stream-Aligned Teams**: Product teams that depend on the platform
 - **Interaction Modes**: Collaboration, communication, and facilitation patterns
 
----
-
-## Companion Website & Alignment
-
-The companion website is available at: `https://peh-packt.platformetrics.com/`
-
-**Note:** As of February 2026, the companion website was not accessible during the creation of this README. If you have access, please verify that:
-- Code listings in Chapter 1 match the files in this repository
-- Any additional resources or updates are documented
-- Example output matches the expected output shown in this guide
-
-Please report any discrepancies between the website and this code repository to the publishers.
-
----
-
-## Exercises and Next Steps
-
-After working through this chapter's code:
-
-1. **Customize `platform-config.yaml`** with your organization's actual platform details
-2. **Run the maturity assessment** to establish a baseline
-3. **Validate design principles** in your actual platform configuration
-4. **Set up Git hooks** for your development team
-5. **Adapt the release workflows** to match your CI/CD infrastructure — this book demonstrates both CircleCI (Chapter 1, infrastructure pipelines) and GitHub Actions (Chapter 8, application delivery) to show the patterns are CI-tool-agnostic
-6. **Establish team topologies** with clear responsibilities and interaction modes
-7. **Document your platform's golden paths** using the configuration as a template
-8. **Measure progress** by running the maturity assessment quarterly and tracking improvements
-
----
-
-## File Structure Summary
-
-```
-Ch01/
-├── README.md                          # This file
-├── platform-maturity-assessment.py    # Platform maturity evaluation tool
-├── design-principles-checklist.py     # Design principles validator
-├── platform-config.yaml               # Platform configuration template
-├── team-topology-generator.py         # Team topology visualizer
-├── test-platform-config.py            # Configuration unit tests
-├── release-workflow.yaml              # GitHub Actions release workflow
-├── .env_example                       # Environment variables template
-├── assessment_results.json            # Sample assessment output
-│
-├── .circleci/
-│   └── config.yml                     # CircleCI infrastructure workflow
-│
-├── .git-hooks/
-│   └── commit-msg                     # Git hook for commit validation
-│
-├── scripts/
-│   ├── bw-helper.sh                   # Shared Bitwarden helper (used by all chapters)
-│   ├── install-githooks.sh            # Install Git hooks
-│   └── upload-secrets.sh              # Upload secrets to Bitwarden
-│
-└── secrets-setup/
-    └── github_secrets.json            # GitHub secrets template
-```
-
----
-
-## Further Reading
-
-For detailed explanations of all concepts in this chapter, refer to:
-- **Chapter 1: Laying the Groundwork** in "The Platform Engineer's Handbook"
-- The accompanying documentation in the manuscript
-
-For additional resources:
-- **Team Topologies**: Read "Team Topologies: Organizing Business and Technology Teams for Fast Flow" by Matthew Skelton and Manuel Pais
-- **Platform Engineering**: See "Continuous Delivery" by Jez Humble and David Farley for release workflow best practices
-- **Site Reliability Engineering**: Refer to "The Site Reliability Engineering Book" for observability and security patterns
-
----
-
-**Author:** Ajay Chankramath (ajay@platformetrics.com)
-**Book:** The Platform Engineer's Handbook (Packt Publishing)
-**Last Updated**: August 2025
