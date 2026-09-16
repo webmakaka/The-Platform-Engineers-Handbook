@@ -18,9 +18,13 @@
 
 1. Copy `.env_example` to `.env` and fill in your Bitwarden credentials:
 
+<br/>
+
 ```bash
 $ cp .env_example .env
 ```
+
+<br/>
 
 2. Set the following environment variables in `.env`:
 
@@ -28,7 +32,11 @@ $ cp .env_example .env
    - `BW_CLIENTSECRET`: Bitwarden API Client Secret
    - `BW_PASSWORD`: Bitwarden Master Password
 
+<br/>
+
 3. Upload your book secrets to Bitwarden (run once):
+
+<br/>
 
 ```bash
 $ cd secrets-setup
@@ -36,14 +44,22 @@ $ chmod +x inject_secrets.sh
 $ ./inject_secrets.sh
 ```
 
+<br/>
+
 4. Set Pulumi config values for the GitHub provider:
+
+<br/>
 
 ```bash
 $ pulumi config set github:token  ghp_your_token_here --secret
 $ pulumi config set github:owner  your-github-org
 ```
 
+<br/>
+
 5. Edit `config/platform_team_values.yaml` to define your repositories and team members, then apply:
+
+<br/>
 
 ```bash
 $ pulumi preview    # dry-run first
@@ -52,9 +68,13 @@ $ pulumi up         # apply
 
 ---
 
+<br/>
+
 ## Step-by-Step Instructions
 
 Follow this execution order to work through the Chapter 1 concepts:
+
+<br/>
 
 ### Step 1: Understand Platform Maturity (5-10 minutes)
 
@@ -98,6 +118,8 @@ Overall Platform Maturity Score: 3.8/5.0
 **Next Step:** Review the results to identify baseline maturity across dimensions.
 
 ---
+
+<br/>
 
 ### Step 2: Customize Platform Configuration (15-20 minutes)
 
@@ -150,6 +172,8 @@ platform:
 
 ---
 
+<br/>
+
 ### Step 3: Validate Design Principles (5 minutes)
 
 Check that your platform configuration adheres to core design principles:
@@ -195,6 +219,8 @@ Summary: 5/6 principles fully compliant
 
 ---
 
+<br/>
+
 ### Step 4: Run Configuration Tests (5 minutes)
 
 Execute the unit tests to ensure configuration validity:
@@ -231,6 +257,8 @@ test-platform-config.py::test_security_policies PASSED
 **Next Step:** Generate team topology visualization (Step 5).
 
 ---
+
+<br/>
 
 ### Step 5: Visualize Team Topology (5 minutes)
 
@@ -288,14 +316,20 @@ INTERACTION MODES:
 
 ---
 
+<br/>
+
 ### Step 6: Set Up Git Hooks for Commit Standards (5 minutes)
 
 Install Git hooks to enforce conventional commits across your team:
+
+<br/>
 
 ```bash
 # From repository root
 $ bash scripts/install-githooks.sh
 ```
+
+<br/>
 
 **What it does:**
 
@@ -328,6 +362,8 @@ $ git commit -m "Updated something"                         ✗ Invalid
 **Next Step:** Review release workflow configuration (Step 7).
 
 ---
+
+<br/>
 
 ### Step 7: Review Release Workflow Pattern (10 minutes)
 
@@ -398,6 +434,8 @@ Demonstrates infrastructure-as-code deployment with Pulumi:
 
 To use the GitHub workflow in your repository:
 
+<br/>
+
 ```yaml
 # In .github/workflows/your-workflow.yml
 jobs:
@@ -415,6 +453,8 @@ jobs:
 
 ---
 
+<br/>
+
 ### Step 8: Configure Secrets Management (10 minutes, optional)
 
 Set up secure secrets storage using Bitwarden:
@@ -425,22 +465,23 @@ Set up secure secrets storage using Bitwarden:
 
 1. **Configure environment variables:**
 
-   ```bash
-   cp .env_example .env
-   # Edit .env with your Bitwarden credentials
-   nano .env
-   ```
+```bash
+cp .env_example .env
+# Edit .env with your Bitwarden credentials
+nano .env
+```
 
 2. **Install Bitwarden CLI (if not already installed):**
 
-   ```bash
-   npm install -g @bitwarden/cli
-   ```
+```bash
+npm install -g @bitwarden/cli
+```
 
 3. **Upload secrets to Bitwarden:**
-   ```bash
-   bash scripts/upload-secrets.sh
-   ```
+
+```bash
+bash scripts/upload-secrets.sh
+```
 
 **What the script does:**
 
@@ -474,6 +515,8 @@ Successfully uploaded secrets to Bitwarden
 **Next Step:** Review the template secrets structure in `secrets-setup/github_secrets.json`.
 
 ---
+
+<br/>
 
 ### Step 9: Review Outputs and Assessment Results (5 minutes)
 

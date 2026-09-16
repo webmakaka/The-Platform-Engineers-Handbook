@@ -7,8 +7,15 @@
 **Original repo:**  
 https://github.com/achankra/peh
 
-**Additional resources, videos, case studies, and interactive tools are available at:**  
-https://peh-packt.platformetrics.com/
+<br/>
+
+**Chapter:**  
+https://peh-packt.platformetrics.com/chapters
+
+<br/>
+
+**Code in Action:**  
+https://peh-packt.platformetrics.com/code-in-action
 
 <br/>
 
@@ -19,7 +26,6 @@ https://www.youtube.com/watch?v=dJECe5bUJW0
 
 ### Chapter 1: Platform Engineering: Laying the Groundwork
 
-**Chapter 1**  
 https://www.youtube.com/watch?v=4_xMX8Jom6o
 
 - Core Design Principles
