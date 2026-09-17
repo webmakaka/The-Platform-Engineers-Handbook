@@ -36,6 +36,8 @@ https://www.youtube.com/watch?v=4_xMX8Jom6o
 
 ### Chapter 2: Scalable Platform Runtime with Kubernetes and Service Mesh
 
+https://www.youtube.com/watch?v=kZVjkFHaJME
+
 - The logic behind using Kubernetes for platform runtime
 - Creating the Platform Runtime Environments
 - Non-Prod and Prod Environments
@@ -44,6 +46,8 @@ https://www.youtube.com/watch?v=4_xMX8Jom6o
 - Enabling Platform Services and Extensions
 
 ### Chapter 3: Securing Platform Access
+
+https://www.youtube.com/watch?v=dD_wvvYDNWI
 
 - Understanding platform security requirements
 - Identity and Access Management with OAuth
