@@ -466,21 +466,15 @@ Set up secure secrets storage using Bitwarden:
 1. **Configure environment variables:**
 
 ```bash
-cp .env_example .env
+$ cp .env_example .env
 # Edit .env with your Bitwarden credentials
-nano .env
+$ vi .env
 ```
 
-2. **Install Bitwarden CLI (if not already installed):**
+2. **Upload secrets to Bitwarden:**
 
 ```bash
-npm install -g @bitwarden/cli
-```
-
-3. **Upload secrets to Bitwarden:**
-
-```bash
-bash scripts/upload-secrets.sh
+$ bash scripts/upload-secrets.sh
 ```
 
 **What the script does:**
