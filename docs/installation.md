@@ -1321,11 +1321,13 @@ pip3 install -r requirements.txt
 > - Anthropic API rate limits can be hit when batch-processing documents for RAG; implement exponential backoff and request throttling.
 > - Scripts run in mock mode without an API key. Set `ANTHROPIC_API_KEY` to use real LLM responses.
 
+<br/>
+
 #### LLM API Key (Optional)
 
 All Chapter 14 scripts run in mock mode by default — no API key needed. To use a real LLM, set one of the following:
 
-**macOS / Linux:**
+<br/>
 
 ```bash
 # Option A: Anthropic Claude (recommended)
@@ -1334,73 +1336,3 @@ export ANTHROPIC_API_KEY="sk-ant-your-key-here"
 # Option B: Local LLM with Ollama (no key needed)
 ollama pull mistral && ollama serve
 ```
-
-**Windows (PowerShell):**
-
-```powershell
-$env:ANTHROPIC_API_KEY = "sk-ant-your-key-here"
-# Or set via System Properties > Environment Variables for persistence
-```
-
----
-
-## Troubleshooting
-
-### Docker Desktop Not Starting
-
-On Windows, ensure WSL 2 is enabled and the WSL 2 Linux kernel update package is installed. On macOS, ensure sufficient disk space and that Rosetta 2 is installed for Apple Silicon Macs (`softwareupdate --install-rosetta`).
-
-### Kind Cluster Networking Issues
-
-If pods cannot reach external networks, check your Docker network settings. On Linux, ensure iptables rules allow forwarding. On macOS/Windows, increase Docker Desktop memory allocation to at least 4 GB.
-
-### Helm Chart Installation Failures
-
-Always run `helm repo update` before installing charts. If a chart fails due to resource constraints, check that your Kind cluster has sufficient CPU and memory. Consider creating a multi-node Kind cluster for production-like setups.
-
-### Python Package Conflicts
-
-Use virtual environments to isolate dependencies per chapter. Create one with:
-
-```bash
-python3 -m venv .venv && source .venv/bin/activate
-# On Windows: .venv\Scripts\activate
-```
-
-This avoids conflicts between chapters that may use different versions of the same package.
-
-### Windows Path Issues
-
-After installing tools via Chocolatey, you may need to restart your terminal for PATH changes to take effect. If a command is not found, verify the tool's install location is in your system PATH.
-
----
-
-## Quick Reference: Tools by Chapter
-
-The following table provides a quick lookup for which tools are needed per chapter. An asterisk (\*) indicates the tool is first introduced in that chapter.
-
-| Chapter | Tools Required (\* = first introduced)                                              |
-| ------- | ----------------------------------------------------------------------------------- |
-| 1       | Git, Docker, Python/UV, Pulumi*, Bitwarden CLI*, CircleCI CLI*, pre-commit*, pytest |
-| 2       | Flux CD*, Istio*, Kustomize*, bats-core*, Kind, kubectl, Helm                       |
-| 3       | Keycloak*, OPA Gatekeeper*, cert-manager\*                                          |
-| 4       | OpenTelemetry SDK*, Prometheus*, Grafana*, Jaeger*, Loki\*                          |
-| 5       | ArgoCD*, Flask, Express.js*, Winston*, OTEL JS SDK*                                 |
-| 6       | Backstage\*, PostgreSQL                                                             |
-| 7       | Flask, @kubernetes/client-node*, @octokit/rest*                                     |
-| 8       | GitHub Actions, Trivy\*                                                             |
-| 9       | Crossplane\*                                                                        |
-| 10      | Yeoman*, Renovate*, Backstage CLI                                                   |
-| 11      | conftest*, OPA CLI*, pre-commit, prometheus-client\*                                |
-| 12      | OpenCost*, Karpenter*, VPA*, Metrics Server*                                        |
-| 13      | Go*, Sloth*, Velero*, Chaos Mesh*                                                   |
-| 14      | LangChain*, Anthropic Claude API*, ChromaDB\*                                       |
-
-> **Note:** All chapters assume the foundational tools (Git, Docker, Python, Node.js, kubectl, Kind, and Helm) are already installed. See the [Foundational Tools](#foundational-tools) section at the beginning of this appendix.
-
-**Companion Website:** For the latest installation scripts, version updates, and additional resources, visit https://peh-packt.platformetrics.com/
-
----
-
-**Author:** Ajay Chankramath (ajay@platformetrics.com)
-**Book:** The Platform Engineer's Handbook (Packt Publishing)
