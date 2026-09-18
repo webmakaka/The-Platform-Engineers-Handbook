@@ -389,137 +389,81 @@ $ pip install pytest pytest-cov pyyaml
 
 GitOps toolkit for Kubernetes. Flux continuously reconciles cluster state with Git repositories.
 
-**macOS:**
 
 ```bash
-brew install fluxcd/tap/flux
+$ curl -s https://fluxcd.io/install.sh | sudo bash
 ```
 
-**Linux (Ubuntu/Debian):**
+<br/>
 
 ```bash
-curl -s https://fluxcd.io/install.sh | sudo bash
+$ flux --version
+flux version 2.9.5
+
+$ flux check --pre  # Check prerequisites
 ```
 
-**Windows:**
-
-```powershell
-choco install flux -y
-# Or download from https://github.com/fluxcd/flux2/releases
-```
-
-**Verify installation:**
-
-```bash
-flux --version
-flux check --pre  # Check prerequisites
-```
-
-> [!WARNING] > **Common pitfalls to watch out for**
->
-> - Not bootstrapping Flux with the correct GitHub token permissions causes silent sync failures.
-> - Modifying resources directly with kubectl instead of through Git breaks the GitOps reconciliation loop.
-> - Forgetting to set up Flux notifications means drift goes undetected for hours or days.
+<br/>
 
 #### Istio (istioctl)
 
 Service mesh providing mTLS encryption, traffic management, and observability. Install using istioctl.
 
-**macOS:**
+<br/>
 
 ```bash
-brew install istioctl
+$ curl -L https://istio.io/downloadIstio | sh -
+$ sudo mv istio-*/bin/istioctl /usr/local/bin/
 ```
 
-**Linux (Ubuntu/Debian):**
+<br/>
 
 ```bash
-curl -L https://istio.io/downloadIstio | sh -
-sudo mv istio-*/bin/istioctl /usr/local/bin/
+$ istioctl version
+$ istioctl install --set profile=demo -y  # Install to cluster
 ```
 
-**Windows:**
-
-```powershell
-# Download from https://github.com/istio/istio/releases
-# Extract and add istioctl.exe to your PATH
-```
-
-**Verify installation:**
-
-```bash
-istioctl version
-istioctl install --set profile=demo -y  # Install to cluster
-```
-
-> [!WARNING] > **Common pitfalls to watch out for**
->
-> - Installing Istio without resource limits can consume significant cluster memory (1-2 GB for the control plane).
-> - Forgetting to label namespaces with `istio-injection=enabled` means sidecars are not injected into pods.
-> - Upgrading Istio without following the canary upgrade process can cause brief traffic disruptions.
+<br/>
 
 #### Kustomize
 
 Template-free customization of Kubernetes YAML configurations.
 
-**macOS:**
+<br/>
 
 ```bash
-brew install kustomize
+$ curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+$ sudo mv kustomize /usr/local/bin/
 ```
 
-**Linux (Ubuntu/Debian):**
+<br/>
 
 ```bash
-curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
-sudo mv kustomize /usr/local/bin/
+$ kustomize version
+v5.8.1
 ```
 
-**Windows:**
-
-```powershell
-choco install kustomize -y
-```
-
-**Verify installation:**
-
-```bash
-kustomize version
-```
-
-> [!WARNING] > **Common pitfalls to watch out for**
->
-> - Using the kubectl built-in kustomize (`kubectl apply -k`) may lag behind the standalone version and miss newer features.
-> - Deeply nested overlays become hard to debug; keep the overlay hierarchy shallow (base + one or two overlays).
-> - Forgetting to include new files in `kustomization.yaml` resources list means they are silently ignored.
+<br/>
 
 #### bats-core
 
 Testing framework for Bash scripts, used for infrastructure validation tests.
 
-**macOS:**
+<br/>
 
 ```bash
-brew install bats-core
+$ sudo apt install -y bats
 ```
 
-**Linux (Ubuntu/Debian):**
+<br/>
+
 
 ```bash
-sudo apt install -y bats
+$ bats --version
+Bats 1.2.1
 ```
 
-**Windows:**
-
-```powershell
-npm install -g bats
-```
-
-**Verify installation:**
-
-```bash
-bats --version
-```
+<br/>
 
 ---
 
@@ -530,6 +474,8 @@ bats --version
 | Keycloak       | ≥22.0   | Identity and access management (OIDC/OAuth2)           |
 | OPA Gatekeeper | ≥3.14   | Kubernetes admission controller for policy enforcement |
 | cert-manager   | ≥1.13   | Automated TLS certificate management                   |
+
+<br/>
 
 #### Keycloak
 
