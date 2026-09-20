@@ -70,7 +70,7 @@ $ pulumi new
 
 <br/>
 
-```bash
+```shell
 $ pulumi config set github:token  ghp_your_token_here --secret
 $ pulumi config set github:owner  your-github-org
 ```
@@ -81,7 +81,13 @@ $ pulumi config set github:owner  your-github-org
 
 <br/>
 
-```bash
+```shell
+$ python pulumi_repo_create.py
+```
+
+<br/>
+
+```shell
 $ pulumi preview    # dry-run first
 $ pulumi up         # apply
 ```
