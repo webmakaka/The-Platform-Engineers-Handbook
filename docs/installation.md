@@ -21,8 +21,6 @@ Before we start coding, you will need to ensure that the tooling used is set up 
   - [Kind (Kubernetes in Docker)](#kind-kubernetes-in-docker)
   - [Helm](#helm)
 - [Chapter-Specific Installation Instructions](#chapter-specific-installation-instructions)
-- [Troubleshooting](#troubleshooting)
-- [Quick Reference: Tools by Chapter](#quick-reference-tools-by-chapter)
 
 ---
 
@@ -319,6 +317,12 @@ $ echo "export PATH=$HOME/.pulumi/bin:$PATH" >> ~/.bashrc && source ~/.bashrc
 ```shell
 $ pulumi version
 v3.263.0
+```
+
+<br/>
+
+```
+$ pip install pulumi pulumi_github
 ```
 
 <br/>
