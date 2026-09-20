@@ -16,6 +16,12 @@
 
 ### Environment Setup
 
+<br/>
+
+https://vault.bitwarden.com/#/settings/security/security-keys
+
+<br/>
+
 1. Copy `.env_example` to `.env` and fill in your Bitwarden credentials:
 
 <br/>
