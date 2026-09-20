@@ -54,6 +54,20 @@ $ ./inject_secrets.sh
 
 4. Set Pulumi config values for the GitHub provider:
 
+
+<br/>
+
+```bash
+$ pulumi login
+$ pulumi whoami
+```
+
+<br/>
+
+```bash
+$ pulumi new
+```
+
 <br/>
 
 ```bash
@@ -71,6 +85,10 @@ $ pulumi config set github:owner  your-github-org
 $ pulumi preview    # dry-run first
 $ pulumi up         # apply
 ```
+
+<br/>
+
+https://app.pulumi.com/marley/projects
 
 ---
 
