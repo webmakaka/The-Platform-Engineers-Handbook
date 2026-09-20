@@ -34,16 +34,17 @@ Before we start coding, you will need to ensure that the tooling used is set up 
 
 ### Pulumi Account Setup
 
+```
+// Create Token
+https://app.pulumi.com/user/settings/tokens?filter=active
+
+Token Name: MY_TOKEN
+```
+
 1. Sign up for a free Pulumi account at [pulumi.com](https://pulumi.com).
 2. Note that for the exercises in this book, an Organization account is not needed; an Individual account will be fine.
 3. Using the profile link in the top right corner of the page, create a **Personal Access Token**.
 4. Take note of this value for now, we will keep it in a secret store later.
-
-> [!WARNING] > **Common pitfalls to watch out for**
->
-> - Forgetting to enforce a consistent state backend (local vs. cloud) leads to drift.
-> - Creating multiple tokens without tracking them properly makes revocation difficult.
-> - Skipping policy-as-code guardrails means unsafe infra patterns can creep in.
 
 <br/>
 
