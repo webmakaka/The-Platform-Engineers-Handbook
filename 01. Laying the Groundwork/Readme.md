@@ -148,8 +148,6 @@ Dimension Scores:
 Overall Platform Maturity Score: 3.8/5.0
 ```
 
-**Next Step:** Review the results to identify baseline maturity across dimensions.
-
 ---
 
 <br/>
@@ -201,8 +199,6 @@ platform:
   # ... rest of config
 ```
 
-**Next Step:** Validate your configuration against design principles (Step 3).
-
 ---
 
 <br/>
@@ -248,8 +244,6 @@ PRINCIPLE: Security & Compliance
 Summary: 5/6 principles fully compliant
 ```
 
-**Next Step:** Address any failed checks by updating `platform-config.yaml`.
-
 ---
 
 <br/>
@@ -286,8 +280,6 @@ test-platform-config.py::test_security_policies PASSED
 
 =========== 5 passed in 0.23s ===========
 ```
-
-**Next Step:** Generate team topology visualization (Step 5).
 
 ---
 
@@ -345,8 +337,6 @@ INTERACTION MODES:
   • Facilitation: Platform team supports and enables stream team success
 ```
 
-**Next Step:** Review and customize the generator for your actual teams.
-
 ---
 
 <br/>
@@ -391,8 +381,6 @@ $ git commit -m "fix(database): resolve connection leak"    ✓ Valid
 $ git commit -m "docs: update installation guide"           ✓ Valid
 $ git commit -m "Updated something"                         ✗ Invalid
 ```
-
-**Next Step:** Review release workflow configuration (Step 7).
 
 ---
 
@@ -481,8 +469,6 @@ jobs:
       REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
       REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
 ```
-
-**Next Step:** Set up secrets management (Step 8).
 
 ---
 
