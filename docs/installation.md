@@ -49,17 +49,32 @@ Before we start coding, you will need to ensure that the tooling used is set up 
 
 ### GitHub Account Setup
 
+```
+// Generate new token
+https://github.com/settings/personal-access-tokens
+
+Token Name: MY_TOKEN
+
+Resource owner: YourOrg
+
+Repository access: All repositories
+
+```
+
+
 We recommend creating a dedicated GitHub organization for practicing this book. While you can use a personal repository, it will not give you access to some of the organizational settings used, as well as the ability to add "mock" development accounts for different personas.
 
 1. Create a new Organization using the documentation at [GitHub Docs: Creating a new organization](https://docs.github.com/en/organizations/collaborating-with-groups-in-organizations/creating-a-new-organization-from-scratch). Use an appropriate name like `<<yourname>>-peh-org`.
 2. Create a Fine-Grained Personal Access Token authorized for use by the organization using the [GitHub PAT documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
 3. The following permissions are needed for the PAT to work with the exercises in this book:
    - Access to all repositories in your organization (not your personal account)
+  
    - Administration: Read & Write
    - Commit statuses: Read & Write
    - Contents: Read & Write
    - Custom Properties: Read & Write
    - Metadata: Read-Only
+     
 4. Take note of this token for now, we will keep it in a secret store later.
 
 > [!WARNING] > **Common pitfalls to watch out for**
