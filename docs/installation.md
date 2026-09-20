@@ -108,11 +108,6 @@ We recommend creating a dedicated GitHub organization for practicing this book. 
 3. Create an API Key via the documentation at [Bitwarden API Key docs](https://bitwarden.com/help/personal-api-key/).
 4. Take note of the client ID and client secret for now; we will script using them as environment variables later.
 
-> [!WARNING] > **Common pitfalls to watch out for**
->
-> - Teams continue storing secrets in configs instead of migrating to the vault.
-> - Poor access scoping (all users see all secrets) creates compliance issues.
-> - Secrets pulled incorrectly into pipelines show up in logs.
 
 <br/>
 
@@ -315,8 +310,8 @@ Infrastructure as Code tool using Python. The CircleCI configuration in this cha
 <br/>
 
 ```bash
-curl -fsSL https://get.pulumi.com | sh
-echo "export PATH=$HOME/.pulumi/bin:$PATH" >> ~/.bashrc && source ~/.bashrc
+$ curl -fsSL https://get.pulumi.com | sh
+$ echo "export PATH=$HOME/.pulumi/bin:$PATH" >> ~/.bashrc && source ~/.bashrc
 ```
 
 <br/>
