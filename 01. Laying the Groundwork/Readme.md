@@ -58,6 +58,7 @@ $ ./inject_secrets.sh
 <br/>
 
 ```bash
+???
 $ pulumi login
 $ pulumi whoami
 ```
@@ -65,6 +66,7 @@ $ pulumi whoami
 <br/>
 
 ```bash
+???
 $ pulumi new
 ```
 
@@ -82,6 +84,7 @@ $ pulumi config set github:owner  your-github-org
 <br/>
 
 ```shell
+???
 $ python pulumi_repo_create.py
 ```
 
