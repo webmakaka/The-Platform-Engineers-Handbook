@@ -152,8 +152,10 @@ Set 'cluster:kubernetesVersion' to '1.27'
 
 The Kind cluster must exist **before** running Pulumi. Pulumi provisions namespaces and quotas on an already-running cluster.
 
+<br/>
+
 ```bash
-kind create cluster --name platform-dev --config - <<EOF
+$ kind create cluster --name platform-dev --config - <<EOF
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
@@ -168,7 +170,10 @@ nodes:
 EOF
 ```
 
+<br/>
+
 **Expected Output:**
+
 ```
 Creating cluster "platform-dev" ...
  ✓ Ensuring node image (kindest/node:v1.28.0) 🖼
@@ -181,12 +186,17 @@ Creating cluster "platform-dev" ...
 Set kubectl context to "kind-platform-dev"
 ```
 
+<br/>
+
 **Step 3b: Verify the Cluster is Running**
 ```bash
 kubectl get nodes
 ```
 
+<br/>
+
 **Expected Output:**
+
 ```
 NAME                         STATUS   ROLES           AGE   VERSION
 platform-dev-control-plane   Ready    control-plane   1m    v1.28.0
