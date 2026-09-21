@@ -376,7 +376,11 @@ k8sallowedregistries.constraints.gatekeeper.sh/allowed-registries created
 
 ### Phase 5: Service Mesh Configuration
 
+<br/>
+
 **Step 5a: Verify Istio Deployment**
+
+FAIL!
 
 ```bash
 # Istio is deployed via Flux HelmRelease — monitor deployment status
