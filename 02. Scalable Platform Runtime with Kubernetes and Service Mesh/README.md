@@ -15,411 +15,7 @@ This chapter teaches you how to configure production-ready Kubernetes platform c
 - **Namespace Provisioning**: Automated onboarding with RBAC, quotas, and labels
 - **Infrastructure Testing**: Automated validation using BATS and Python
 
-## Code-to-Chapter Mapping
-
-This section maps each file to its specific chapter section and learning objectives.
-
-### 2.1: Why Kubernetes for Platform Runtime
-
-Foundational concepts explaining Kubernetes' role in platform engineering. No direct code in this section, but all subsequent code demonstrates these principles:
-- Platform vs. Application distinction
-- Declarative infrastructure management
-- Multi-tenancy patterns with namespace isolation
-
-### 2.2: Network Configuration with DataClasses
-
-**Primary File:** `modules/network.py`
-
-Configuration module defining network infrastructure using Python DataClasses for type-safe configuration management.
-
-**Key Classes:**
-- `SubnetConfig`: Individual subnet configuration with CIDR and availability zone
-- `ServiceMeshConfig`: Istio service mesh settings (version, namespace, traffic policies, observability)
-- `FirewallRule`: Network policy rules (ingress/egress, protocol, CIDR blocks)
-- `OPAConfig`: OPA/Gatekeeper policy engine settings
-- `NetworkConfig`: Root configuration aggregating all network topology
-- `TrafficPolicy` Enum: Network traffic policies (ALLOW_ALL, DENY_ALL, ISTIO_MUTUAL_TLS, STRICT)
-- `LoggingLevel` Enum: Network debugging verbosity levels
-
-**Learning Objectives:**
-- Use Python DataClasses for configuration management
-- Define subnet topology with validation
-- Configure service mesh with mTLS policies
-- Set up OPA policy constraints
-- Create network policies for zero-trust security
-
-**Helper Functions:**
-- `create_development_network()`: Development cluster with 2 subnets, 1 NAT gateway
-- `create_production_network()`: Production cluster with 3 subnets, 3 NAT gateways, stricter policies
-
-### 2.3: Deploying the Core Platform
-
-**Primary File:** `modules/cluster.py`
-
-Kubernetes cluster provisioning module for Kind (Kubernetes in Docker) using Pulumi.
-
-**Key Classes:**
-- `KindClusterConfig`: Configuration dataclass for Kind cluster (name, version, node count, port mappings, labels, mounts)
-- `KindClusterManager`: Manages cluster lifecycle with Pulumi
-  - `create_kind_cluster()`: Generate Kind cluster configuration with kubeadm and containerd settings
-  - `create_provider()`: Initialize Kubernetes provider for resource management
-  - `setup_namespaces()`: Create system namespaces (flux-system, istio-system, cert-manager, monitoring, application)
-  - `deploy_cluster()`: Orchestrate complete cluster deployment
-
-**Learning Objectives:**
-- Provision local Kubernetes clusters using Kind
-- Create essential namespaces with proper labels
-- Configure resource quotas and limit ranges
-- Manage cluster lifecycle with Pulumi
-- Implement proper dependency ordering
-
-**Helper Functions:**
-- `create_dev_cluster()`: 1 control plane + 2 worker nodes for development
-- `create_prod_cluster()`: 1 control plane + 3 worker nodes for production-like testing
-
-### 2.4: Deployment Validation Testing
-
-**Primary Files:**
-- `test/infrastructure.bats` - BATS shell-based infrastructure tests
-- `test-cluster-health.py` - Python unittest framework
-
-#### infrastructure.bats
-
-BATS (Bash Automated Testing System) tests for infrastructure validation.
-
-**Test Cases:**
-- `cluster_is_running`: Verify kubectl connectivity and cluster availability
-- `namespaces_exist`: Validate platform-system and monitoring namespaces
-- `flux_is_ready`: Check Flux GitOps controller health
-- `istio_injection_enabled`: Verify sidecar injection in application namespaces
-
-**Learning Objectives:**
-- Write shell-based infrastructure tests with BATS
-- Validate Kubernetes cluster configuration
-- Test GitOps and service mesh deployment
-- Implement health checks for critical components
-
-#### test-cluster-health.py
-
-Python unittest framework for cluster health validation.
-
-**Test Classes:**
-- `TestClusterHealth`: Validate node readiness, system pods running, ArgoCD namespace
-- `TestPulumiConfig`: Verify Pulumi configuration files exist
-- `TestServiceMeshConfig`: Validate Istio mTLS configuration
-
-**Learning Objectives:**
-- Use Python unittest for infrastructure testing
-- Parse kubectl JSON output
-- Validate YAML configurations
-- Create reusable test patterns
-
-### 2.5: GitOps Architecture with Flux
-
-**Primary Files:**
-- `modules/flux.py` - Flux configuration module
-- `platform-services.yaml` - Platform services kustomization
-- `istio-mesh-config.yaml` - Istio service mesh configuration
-
-#### modules/flux.py
-
-Flux GitOps controller configuration using App of Apps pattern.
-
-**Key Classes:**
-- `FluxSourceConfig`: Git repository source configuration
-  - `to_kubernetes_resource()`: Convert to GitRepository manifest
-- `FluxKustomizationConfig`: Kustomization configuration for reconciliation
-  - `to_kubernetes_resource()`: Convert to Kustomization manifest
-- `FluxAppOfAppsManager`: Manages hierarchical application structure
-  - `add_source()`: Register Git source
-  - `add_kustomization()`: Register Kustomization
-  - `create_root_application()`: Create root App of Apps entry point
-  - `create_platform_services_app()`: Create platform services application
-  - `create_workload_app()`: Create user workload applications
-  - `deploy_flux()`: Install Flux via Helm
-  - `generate_manifests()`: Generate YAML manifests for declarative application
-
-**App of Apps Hierarchy:**
-```
-root-app (entry point)
-├── platform-services-app (Istio, cert-manager, monitoring, OPA)
-└── workload-apps (api-backend, frontend, etc.)
-```
-
-**Learning Objectives:**
-- Implement App of Apps pattern for GitOps
-- Define Git sources and Kustomizations
-- Configure dependency management
-- Use Flux for continuous deployment
-- Validate resource health checks
-
-#### platform-services.yaml
-
-Kustomization manifest defining cluster-wide platform services via Flux.
-
-**Resources Deployed:**
-- **Istio Service Mesh**: istiod (control plane), ingress gateway, base
-  - Namespace: istio-system
-  - Replicas: 2 (istiod), 2 (ingress gateway)
-  - Auto-scaling: 2-5 replicas with resource requests/limits
-
-- **cert-manager**: TLS certificate management
-  - Namespace: cert-manager
-  - ClusterIssuers: letsencrypt-prod, letsencrypt-staging
-  - ACME solver for HTTP-01 challenges
-
-- **Monitoring Stack**: Prometheus, Grafana, Alertmanager
-  - Namespace: monitoring (with istio-injection enabled)
-  - Prometheus: 2 replicas, 7-day retention
-  - Grafana: Pre-configured datasources
-  - Alertmanager: Multi-channel routing
-
-- **OPA/Gatekeeper**: Policy enforcement
-  - Namespace: gatekeeper-system
-  - ConstraintTemplates:
-    - `K8sRequiredLimits`: Enforce CPU/memory limits on containers
-    - `K8sAllowedRegistries`: Whitelist image registries
-  - Constraints: require-limits, allowed-registries
-
-- **Network Policies**:
-  - Default deny ingress in application namespace
-  - Allow same-namespace traffic
-  - Allow from Istio ingress gateway
-
-**Learning Objectives:**
-- Use Kustomize for resource organization
-- Deploy Helm charts via Flux
-- Configure Istio service mesh
-- Implement OPA policies
-- Set up monitoring and observability
-- Use HelmRepository sources
-
-#### istio-mesh-config.yaml
-
-Istio service mesh configuration resources.
-
-**Security Policies:**
-- `PeerAuthentication`: Enforce strict mTLS mode
-- `RequestAuthentication`: JWT token validation
-- `AuthorizationPolicy`: RBAC with deny-all default
-
-**Traffic Management:**
-- `VirtualService`: Canary deployments (90% v1, 10% v2)
-  - Timeout: 10s, Retries: 3 attempts × 2s
-- `DestinationRule`: Load balancing and circuit breaking
-  - Connection pooling: 100 max connections
-  - Outlier detection: eject after 5 consecutive errors
-
-**Ingress:**
-- `Gateway`: Multi-host HTTPS/HTTP configuration
-  - HTTPS with TLS secrets
-  - HTTP to HTTPS redirect
-
-**Observability:**
-- `Telemetry`: Metrics and tracing configuration
-  - Prometheus metrics with custom dimensions
-  - Jaeger tracing with 10% sampling
-
-**Learning Objectives:**
-- Implement mTLS with Istio
-- Configure traffic policies for canary deployments
-- Set up circuit breaking and outlier detection
-- Define authorization policies
-- Configure observability with metrics and tracing
-
-### 2.5b: Platform-Services Repository — Kustomize Structure
-
-Files in the `environments/` tree belong to the **platform-services** repository that GitOps monitors.
-
-| File | Description |
-|------|-------------|
-| `environments/base/helm-repos.yaml` | Flux `HelmRepository` CRDs for Istio, cert-manager, Prometheus, OPA, Flux |
-| `environments/base/istio-helm.yaml` | Flux `HelmRelease` CRDs for istio-base, istiod, and istio-ingress (versions omitted — set per env) |
-| `environments/base/kustomization.yaml` | Kustomize root listing base resources for overlay inheritance |
-| `environments/platform-sandbox/istio.yaml` | Version overlay: pins istio-base, istiod, istio-ingress to `1.22.4` for platform-sandbox |
-| `environments/platform-sandbox/kustomization.yaml` | Kustomize overlay: includes base resources + applies `istio.yaml` patch + adds env label |
-| `environments/app-dev/istio.yaml` | Version overlay for app-dev (promoted from sandbox after validation) |
-| `environments/app-dev/kustomization.yaml` | Kustomize overlay for app-dev environment |
-
-### 2.5c: Platform-GitOps Repository — App of Apps Structure
-
-Files in `platform-gitops/` belong to the **platform-gitops** App of Apps repository.
-
-| File | Description |
-|------|-------------|
-| `platform-gitops/environments/platform-sandbox/kustomization.yaml` | Entry point for sandbox env — includes `tenants/` |
-| `platform-gitops/environments/platform-sandbox/tenants/kustomization.yaml` | Lists tenant folders (platform-services) |
-| `platform-gitops/environments/platform-sandbox/tenants/platform-services/platform-services.yaml` | `GitRepository` + `Kustomization` CRDs that tell Flux to monitor platform-services repo |
-| `platform-gitops/environments/platform-sandbox/tenants/platform-services/kustomization.yaml` | Kustomize entry for platform-services tenant |
-
-### 2.5d: Smoke Testing & Reconciliation
-
-| File | Description |
-|------|-------------|
-| `smoke/http-gateway.yaml` | Minimal Istio `Gateway` + `VirtualService` deployed during smoke tests only |
-| `smoke/gateway_job.yaml` | Kubernetes `Job` that sends a curl request through the Istio ingress to validate routing |
-| `scripts/flux_reconcile.sh` | Bash script: forces Flux reconciliation, waits for readiness, then runs the gateway smoke test |
-
-### 2.5e: Policy-as-Code
-
-**File:** `policy/flux.rego`
-
-OPA/Rego policies validated by `conftest` in the pre-merge CI step.
-
-| Rule | What it enforces |
-|------|-----------------|
-| Deny `:latest` image tags | All containers (including init) must pin an explicit version |
-| Deny unauthorized namespaces | Deployments restricted to `app-dev`, `app-qa`, `app-prod`, `platform-sandbox` |
-| Require resource limits | CPU and memory limits mandatory on all containers |
-| Deny floating Helm chart versions | `*` wildcards and `>=` ranges rejected in `HelmRelease` specs |
-| Require standard labels | `app`, `owner`, `env` labels required on all Deployments |
-
-### 2.4b: CircleCI Deployment Pipeline
-
-**File:** `.circleci/config.yml`
-
-Full CI/CD pipeline implementing the hardened deployment strategy from Figure 2.3.
-
-| Workflow | Trigger | Steps |
-|----------|---------|-------|
-| `preview` | Commit to `main` | lint → type-check → policy-check → pulumi preview → deploy sandbox → bats tests → flux reconcile + smoke test |
-| `update` | Git tag | Same as preview → manual approval gate → deploy app-dev → validate app-dev |
-
-### 2.6: Pulumi Kind Cluster
-
-**Primary File:** `pulumi-cluster/__main__.py`
-
-Kind cluster deployment using Pulumi for infrastructure-as-code patterns.
-
-**Resources Created:**
-- Kind cluster with configurable worker nodes
-- Docker network for cluster communication
-- Port mappings for ingress (80, 443) and NodePorts (30000-30100)
-- Kubeconfig export for kubectl access
-
-**Configuration (via Pulumi.yaml):**
-```yaml
-cluster:name: platform-dev
-cluster:kubernetesVersion: "1.28"
-cluster:numWorkerNodes: 2
-cluster:environment: dev
-```
-
-**Learning Objectives:**
-- Provision Kind clusters with Pulumi
-- Configure cluster networking and port mappings
-- Manage cluster lifecycle with IaC
-- Export kubeconfig for kubectl access
-
-### Supplementary Files
-
-#### namespace-provisioner.py
-
-Standalone Python script for automating namespace provisioning in existing clusters.
-
-**Features:**
-- Create namespaces with custom labels
-- Apply resource quotas (CPU, memory, pod count)
-- Implement network policies (deny-all ingress, allow same-namespace, allow monitoring)
-- Create service accounts and RBAC bindings
-- Environment-aware configuration (dev/staging/prod)
-
-**Usage:**
-```bash
-python namespace-provisioner.py --namespace app-team --env prod --team backend
-```
-
-**Learning Objectives:**
-- Automate namespace onboarding
-- Implement resource governance
-- Configure network policies programmatically
-- Create repeatable infrastructure workflows
-
-#### multi-env-config.yaml
-
-Configuration comparison for production vs. non-production environments.
-
-**Production Configuration:**
-- 18 nodes (3 system + 10 app + 5 batch)
-- t3.xlarge/2xlarge and m6i.xlarge instances
-- 30-day metrics retention
-- Pod security policies enabled
-- Daily backups with 30-day retention
-
-**Non-Production Configuration:**
-- 6 nodes (2 system + 3 app + 1 batch)
-- t3.large/xlarge instances
-- 7-day metrics retention
-- Relaxed security for development velocity
-- Weekly backups with 7-day retention
-
-**Learning Objectives:**
-- Design environment-specific cluster configurations
-- Understand production security requirements
-- Configure autoscaling for different workloads
-- Plan monitoring and backup strategies
-
-#### argocd-platform-app.yaml
-
-Alternative GitOps tool configuration (ArgoCD vs. Flux).
-
-**Applications:**
-- platform-core: Core platform services
-- platform-observability: Monitoring stack (Prometheus, Grafana, Jaeger)
-- platform-ingress: Ingress controller configuration
-
-**Project Configuration:**
-- Source restrictions (approved Git repositories and Helm charts)
-- Destination namespaces (platform-*, monitoring, ingress-*)
-- RBAC and audit controls
-- Signature verification for Git commits
-
-**Learning Objectives:**
-- Compare Flux and ArgoCD approaches
-- Configure GitOps automation
-- Implement source and destination policies
-- Enable multi-environment deployments
-
-#### Pulumi.yaml
-
-Pulumi project configuration file.
-
-**Defines:**
-- Project name: platform-cluster
-- Runtime: Python
-- Configuration parameters for cluster name, Kubernetes version, node count, environment, region
-- VirtualEnv setup for dependency isolation
-
-#### Pulumi.platform-sandbox.yaml / Pulumi.app-dev.yaml
-
-Per-environment Pulumi stack configuration files.
-
-| Key config | platform-sandbox | app-dev |
-|-----------|-----------------|---------|
-| `network:vpcCidr` | `10.0.0.0/16` | `10.1.0.0/16` |
-| `cluster:name` | `platform-sandbox` | `app-dev` |
-| `flux:gitopsRepoPath` | `./environments/platform-sandbox` | `./environments/app-dev` |
-
-Select a stack with `pulumi stack select platform-sandbox` before running `pulumi up`.
-
-### pulumi-cluster/ Directory
-
-Pulumi project for Kind cluster deployment.
-
-**Files:**
-- `__main__.py`: Kind cluster with configurable workers, networking, port mappings
-- `Pulumi.yaml`: Project configuration (common settings)
-- `Pulumi.platform-sandbox.yaml`: Stack config for platform-sandbox environment
-- `Pulumi.app-dev.yaml`: Stack config for app-dev environment
-- `requirements.txt`: Python dependencies (pulumi, pulumi-kubernetes, pyyaml)
-
-### test/ Directory
-
-Test automation for infrastructure validation.
-
-**Files:**
-- `infrastructure.bats`: BATS shell tests for cluster validation
-- Related Python tests: `test-cluster-health.py` (in root directory)
+<br/>
 
 ## Architecture
 
@@ -457,100 +53,7 @@ Test automation for infrastructure validation.
 └─────────────────────────────────────────────────────┘
 ```
 
-## Orphan Files and Notes
-
-### Potential Orphan/Alternative Files
-
-The following files are complementary but not directly tied to chapter sections:
-
-1. **argocd-platform-app.yaml** - Alternative GitOps tool (Chapter 2 focuses on Flux, not ArgoCD)
-   - Recommendation: Keep for reference; note in README that Flux is primary pattern
-
-2. **pulumi-cluster/__main__.py** - Kind cluster via Pulumi (IaC approach)
-   - Recommendation: Use alongside the Kind CLI approach for comparing IaC vs imperative workflows
-
-3. **multi-env-config.yaml** - Standalone configuration comparison (informational, not executable)
-   - Recommendation: Keep for learning environment design principles
-
-All other files are core to the chapter content and should be retained.
-
-## Prerequisites
-
-### Running This Chapter Standalone
-
-> If you are jumping into this chapter without completing earlier chapters, use these commands to set up the infrastructure dependencies. If you already have them running, skip this section.
-
-> **Note:** Chapter 2 creates the Kind cluster itself. You only need Docker Desktop running before you start.
-
-```bash
-# 1. Start Docker Desktop (macOS: open from Applications or Spotlight)
-open -a "Docker"
-# Wait for the Docker engine to start before continuing
-
-```
-
-### Docker Runtime (Required)
-
-Kind runs Kubernetes nodes as Docker containers, so a Docker-compatible runtime must be running **before** you create a cluster.
-
-- **Docker Desktop** (macOS / Windows): Open Docker Desktop and wait for the engine to start.
-- **Colima** (macOS, lightweight alternative): `colima start`
-- **Docker Engine** (Linux): `sudo systemctl start docker`
-
-Verify Docker is reachable:
-```bash
-docker info --format '{{.ServerVersion}}'
-# Should print a version like 24.0.7 — if you see a connection error, start your runtime first.
-```
-
-### Required Tools
-
-1. **Kind** (v0.20+) - Kubernetes in Docker
-   ```bash
-   # macOS: brew install kind
-   # Linux:
-   curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
-   chmod +x ./kind && sudo mv ./kind /usr/local/bin
-   ```
-
-2. **kubectl** (v1.26+) - Kubernetes CLI
-   ```bash
-   curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-   chmod +x kubectl && sudo mv kubectl /usr/local/bin
-   ```
-
-3. **Pulumi** (v3.0+) - Infrastructure as Code framework
-   ```bash
-   curl -fsSL https://get.pulumi.com | sh
-   ```
-
-4. **Flux CLI** (v2.0+) - GitOps controller
-   ```bash
-   curl -s https://fluxcd.io/install.sh | sudo bash
-   ```
-
-5. **Helm** (v3.0+) - Kubernetes package manager
-   ```bash
-   curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-   ```
-
-6. **Kustomize** (v5.0+) - Kubernetes configuration management
-   ```bash
-   # macOS: brew install kustomize
-   # Linux: curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
-   ```
-
-7. **bats** (v1.0+) - Bash Automated Testing System
-   ```bash
-   sudo apt-get install -y bats
-   ```
-
-8. **Python** (v3.8+) with pip packages (installed via virtual environment in Step 2a):
-   ```bash
-   cd pulumi-cluster
-   python3 -m venv venv && source venv/bin/activate
-   pip install -r requirements.txt   # pulumi, pulumi-kubernetes, pyyaml
-   ```
+<br/>
 
 ## Step-by-Step Instructions
 
@@ -994,6 +497,439 @@ Deleted nodes: ["platform-dev-control-plane" "platform-dev-worker" "platform-dev
 Stack 'dev' has been removed!
 ```
 
+<br/>
+
+
+
+
+---
+
+## Code-to-Chapter Mapping
+
+This section maps each file to its specific chapter section and learning objectives.
+
+### 2.1: Why Kubernetes for Platform Runtime
+
+Foundational concepts explaining Kubernetes' role in platform engineering. No direct code in this section, but all subsequent code demonstrates these principles:
+- Platform vs. Application distinction
+- Declarative infrastructure management
+- Multi-tenancy patterns with namespace isolation
+
+### 2.2: Network Configuration with DataClasses
+
+**Primary File:** `modules/network.py`
+
+Configuration module defining network infrastructure using Python DataClasses for type-safe configuration management.
+
+**Key Classes:**
+- `SubnetConfig`: Individual subnet configuration with CIDR and availability zone
+- `ServiceMeshConfig`: Istio service mesh settings (version, namespace, traffic policies, observability)
+- `FirewallRule`: Network policy rules (ingress/egress, protocol, CIDR blocks)
+- `OPAConfig`: OPA/Gatekeeper policy engine settings
+- `NetworkConfig`: Root configuration aggregating all network topology
+- `TrafficPolicy` Enum: Network traffic policies (ALLOW_ALL, DENY_ALL, ISTIO_MUTUAL_TLS, STRICT)
+- `LoggingLevel` Enum: Network debugging verbosity levels
+
+**Learning Objectives:**
+- Use Python DataClasses for configuration management
+- Define subnet topology with validation
+- Configure service mesh with mTLS policies
+- Set up OPA policy constraints
+- Create network policies for zero-trust security
+
+**Helper Functions:**
+- `create_development_network()`: Development cluster with 2 subnets, 1 NAT gateway
+- `create_production_network()`: Production cluster with 3 subnets, 3 NAT gateways, stricter policies
+
+### 2.3: Deploying the Core Platform
+
+**Primary File:** `modules/cluster.py`
+
+Kubernetes cluster provisioning module for Kind (Kubernetes in Docker) using Pulumi.
+
+**Key Classes:**
+- `KindClusterConfig`: Configuration dataclass for Kind cluster (name, version, node count, port mappings, labels, mounts)
+- `KindClusterManager`: Manages cluster lifecycle with Pulumi
+  - `create_kind_cluster()`: Generate Kind cluster configuration with kubeadm and containerd settings
+  - `create_provider()`: Initialize Kubernetes provider for resource management
+  - `setup_namespaces()`: Create system namespaces (flux-system, istio-system, cert-manager, monitoring, application)
+  - `deploy_cluster()`: Orchestrate complete cluster deployment
+
+**Learning Objectives:**
+- Provision local Kubernetes clusters using Kind
+- Create essential namespaces with proper labels
+- Configure resource quotas and limit ranges
+- Manage cluster lifecycle with Pulumi
+- Implement proper dependency ordering
+
+**Helper Functions:**
+- `create_dev_cluster()`: 1 control plane + 2 worker nodes for development
+- `create_prod_cluster()`: 1 control plane + 3 worker nodes for production-like testing
+
+### 2.4: Deployment Validation Testing
+
+**Primary Files:**
+- `test/infrastructure.bats` - BATS shell-based infrastructure tests
+- `test-cluster-health.py` - Python unittest framework
+
+#### infrastructure.bats
+
+BATS (Bash Automated Testing System) tests for infrastructure validation.
+
+**Test Cases:**
+- `cluster_is_running`: Verify kubectl connectivity and cluster availability
+- `namespaces_exist`: Validate platform-system and monitoring namespaces
+- `flux_is_ready`: Check Flux GitOps controller health
+- `istio_injection_enabled`: Verify sidecar injection in application namespaces
+
+**Learning Objectives:**
+- Write shell-based infrastructure tests with BATS
+- Validate Kubernetes cluster configuration
+- Test GitOps and service mesh deployment
+- Implement health checks for critical components
+
+#### test-cluster-health.py
+
+Python unittest framework for cluster health validation.
+
+**Test Classes:**
+- `TestClusterHealth`: Validate node readiness, system pods running, ArgoCD namespace
+- `TestPulumiConfig`: Verify Pulumi configuration files exist
+- `TestServiceMeshConfig`: Validate Istio mTLS configuration
+
+**Learning Objectives:**
+- Use Python unittest for infrastructure testing
+- Parse kubectl JSON output
+- Validate YAML configurations
+- Create reusable test patterns
+
+### 2.5: GitOps Architecture with Flux
+
+**Primary Files:**
+- `modules/flux.py` - Flux configuration module
+- `platform-services.yaml` - Platform services kustomization
+- `istio-mesh-config.yaml` - Istio service mesh configuration
+
+#### modules/flux.py
+
+Flux GitOps controller configuration using App of Apps pattern.
+
+**Key Classes:**
+- `FluxSourceConfig`: Git repository source configuration
+  - `to_kubernetes_resource()`: Convert to GitRepository manifest
+- `FluxKustomizationConfig`: Kustomization configuration for reconciliation
+  - `to_kubernetes_resource()`: Convert to Kustomization manifest
+- `FluxAppOfAppsManager`: Manages hierarchical application structure
+  - `add_source()`: Register Git source
+  - `add_kustomization()`: Register Kustomization
+  - `create_root_application()`: Create root App of Apps entry point
+  - `create_platform_services_app()`: Create platform services application
+  - `create_workload_app()`: Create user workload applications
+  - `deploy_flux()`: Install Flux via Helm
+  - `generate_manifests()`: Generate YAML manifests for declarative application
+
+**App of Apps Hierarchy:**
+```
+root-app (entry point)
+├── platform-services-app (Istio, cert-manager, monitoring, OPA)
+└── workload-apps (api-backend, frontend, etc.)
+```
+
+**Learning Objectives:**
+- Implement App of Apps pattern for GitOps
+- Define Git sources and Kustomizations
+- Configure dependency management
+- Use Flux for continuous deployment
+- Validate resource health checks
+
+#### platform-services.yaml
+
+Kustomization manifest defining cluster-wide platform services via Flux.
+
+**Resources Deployed:**
+- **Istio Service Mesh**: istiod (control plane), ingress gateway, base
+  - Namespace: istio-system
+  - Replicas: 2 (istiod), 2 (ingress gateway)
+  - Auto-scaling: 2-5 replicas with resource requests/limits
+
+- **cert-manager**: TLS certificate management
+  - Namespace: cert-manager
+  - ClusterIssuers: letsencrypt-prod, letsencrypt-staging
+  - ACME solver for HTTP-01 challenges
+
+- **Monitoring Stack**: Prometheus, Grafana, Alertmanager
+  - Namespace: monitoring (with istio-injection enabled)
+  - Prometheus: 2 replicas, 7-day retention
+  - Grafana: Pre-configured datasources
+  - Alertmanager: Multi-channel routing
+
+- **OPA/Gatekeeper**: Policy enforcement
+  - Namespace: gatekeeper-system
+  - ConstraintTemplates:
+    - `K8sRequiredLimits`: Enforce CPU/memory limits on containers
+    - `K8sAllowedRegistries`: Whitelist image registries
+  - Constraints: require-limits, allowed-registries
+
+- **Network Policies**:
+  - Default deny ingress in application namespace
+  - Allow same-namespace traffic
+  - Allow from Istio ingress gateway
+
+**Learning Objectives:**
+- Use Kustomize for resource organization
+- Deploy Helm charts via Flux
+- Configure Istio service mesh
+- Implement OPA policies
+- Set up monitoring and observability
+- Use HelmRepository sources
+
+#### istio-mesh-config.yaml
+
+Istio service mesh configuration resources.
+
+**Security Policies:**
+- `PeerAuthentication`: Enforce strict mTLS mode
+- `RequestAuthentication`: JWT token validation
+- `AuthorizationPolicy`: RBAC with deny-all default
+
+**Traffic Management:**
+- `VirtualService`: Canary deployments (90% v1, 10% v2)
+  - Timeout: 10s, Retries: 3 attempts × 2s
+- `DestinationRule`: Load balancing and circuit breaking
+  - Connection pooling: 100 max connections
+  - Outlier detection: eject after 5 consecutive errors
+
+**Ingress:**
+- `Gateway`: Multi-host HTTPS/HTTP configuration
+  - HTTPS with TLS secrets
+  - HTTP to HTTPS redirect
+
+**Observability:**
+- `Telemetry`: Metrics and tracing configuration
+  - Prometheus metrics with custom dimensions
+  - Jaeger tracing with 10% sampling
+
+**Learning Objectives:**
+- Implement mTLS with Istio
+- Configure traffic policies for canary deployments
+- Set up circuit breaking and outlier detection
+- Define authorization policies
+- Configure observability with metrics and tracing
+
+### 2.5b: Platform-Services Repository — Kustomize Structure
+
+Files in the `environments/` tree belong to the **platform-services** repository that GitOps monitors.
+
+| File | Description |
+|------|-------------|
+| `environments/base/helm-repos.yaml` | Flux `HelmRepository` CRDs for Istio, cert-manager, Prometheus, OPA, Flux |
+| `environments/base/istio-helm.yaml` | Flux `HelmRelease` CRDs for istio-base, istiod, and istio-ingress (versions omitted — set per env) |
+| `environments/base/kustomization.yaml` | Kustomize root listing base resources for overlay inheritance |
+| `environments/platform-sandbox/istio.yaml` | Version overlay: pins istio-base, istiod, istio-ingress to `1.22.4` for platform-sandbox |
+| `environments/platform-sandbox/kustomization.yaml` | Kustomize overlay: includes base resources + applies `istio.yaml` patch + adds env label |
+| `environments/app-dev/istio.yaml` | Version overlay for app-dev (promoted from sandbox after validation) |
+| `environments/app-dev/kustomization.yaml` | Kustomize overlay for app-dev environment |
+
+### 2.5c: Platform-GitOps Repository — App of Apps Structure
+
+Files in `platform-gitops/` belong to the **platform-gitops** App of Apps repository.
+
+| File | Description |
+|------|-------------|
+| `platform-gitops/environments/platform-sandbox/kustomization.yaml` | Entry point for sandbox env — includes `tenants/` |
+| `platform-gitops/environments/platform-sandbox/tenants/kustomization.yaml` | Lists tenant folders (platform-services) |
+| `platform-gitops/environments/platform-sandbox/tenants/platform-services/platform-services.yaml` | `GitRepository` + `Kustomization` CRDs that tell Flux to monitor platform-services repo |
+| `platform-gitops/environments/platform-sandbox/tenants/platform-services/kustomization.yaml` | Kustomize entry for platform-services tenant |
+
+### 2.5d: Smoke Testing & Reconciliation
+
+| File | Description |
+|------|-------------|
+| `smoke/http-gateway.yaml` | Minimal Istio `Gateway` + `VirtualService` deployed during smoke tests only |
+| `smoke/gateway_job.yaml` | Kubernetes `Job` that sends a curl request through the Istio ingress to validate routing |
+| `scripts/flux_reconcile.sh` | Bash script: forces Flux reconciliation, waits for readiness, then runs the gateway smoke test |
+
+### 2.5e: Policy-as-Code
+
+**File:** `policy/flux.rego`
+
+OPA/Rego policies validated by `conftest` in the pre-merge CI step.
+
+| Rule | What it enforces |
+|------|-----------------|
+| Deny `:latest` image tags | All containers (including init) must pin an explicit version |
+| Deny unauthorized namespaces | Deployments restricted to `app-dev`, `app-qa`, `app-prod`, `platform-sandbox` |
+| Require resource limits | CPU and memory limits mandatory on all containers |
+| Deny floating Helm chart versions | `*` wildcards and `>=` ranges rejected in `HelmRelease` specs |
+| Require standard labels | `app`, `owner`, `env` labels required on all Deployments |
+
+### 2.4b: CircleCI Deployment Pipeline
+
+**File:** `.circleci/config.yml`
+
+Full CI/CD pipeline implementing the hardened deployment strategy from Figure 2.3.
+
+| Workflow | Trigger | Steps |
+|----------|---------|-------|
+| `preview` | Commit to `main` | lint → type-check → policy-check → pulumi preview → deploy sandbox → bats tests → flux reconcile + smoke test |
+| `update` | Git tag | Same as preview → manual approval gate → deploy app-dev → validate app-dev |
+
+### 2.6: Pulumi Kind Cluster
+
+**Primary File:** `pulumi-cluster/__main__.py`
+
+Kind cluster deployment using Pulumi for infrastructure-as-code patterns.
+
+**Resources Created:**
+- Kind cluster with configurable worker nodes
+- Docker network for cluster communication
+- Port mappings for ingress (80, 443) and NodePorts (30000-30100)
+- Kubeconfig export for kubectl access
+
+**Configuration (via Pulumi.yaml):**
+```yaml
+cluster:name: platform-dev
+cluster:kubernetesVersion: "1.28"
+cluster:numWorkerNodes: 2
+cluster:environment: dev
+```
+
+**Learning Objectives:**
+- Provision Kind clusters with Pulumi
+- Configure cluster networking and port mappings
+- Manage cluster lifecycle with IaC
+- Export kubeconfig for kubectl access
+
+### Supplementary Files
+
+#### namespace-provisioner.py
+
+Standalone Python script for automating namespace provisioning in existing clusters.
+
+**Features:**
+- Create namespaces with custom labels
+- Apply resource quotas (CPU, memory, pod count)
+- Implement network policies (deny-all ingress, allow same-namespace, allow monitoring)
+- Create service accounts and RBAC bindings
+- Environment-aware configuration (dev/staging/prod)
+
+**Usage:**
+```bash
+python namespace-provisioner.py --namespace app-team --env prod --team backend
+```
+
+**Learning Objectives:**
+- Automate namespace onboarding
+- Implement resource governance
+- Configure network policies programmatically
+- Create repeatable infrastructure workflows
+
+#### multi-env-config.yaml
+
+Configuration comparison for production vs. non-production environments.
+
+**Production Configuration:**
+- 18 nodes (3 system + 10 app + 5 batch)
+- t3.xlarge/2xlarge and m6i.xlarge instances
+- 30-day metrics retention
+- Pod security policies enabled
+- Daily backups with 30-day retention
+
+**Non-Production Configuration:**
+- 6 nodes (2 system + 3 app + 1 batch)
+- t3.large/xlarge instances
+- 7-day metrics retention
+- Relaxed security for development velocity
+- Weekly backups with 7-day retention
+
+**Learning Objectives:**
+- Design environment-specific cluster configurations
+- Understand production security requirements
+- Configure autoscaling for different workloads
+- Plan monitoring and backup strategies
+
+#### argocd-platform-app.yaml
+
+Alternative GitOps tool configuration (ArgoCD vs. Flux).
+
+**Applications:**
+- platform-core: Core platform services
+- platform-observability: Monitoring stack (Prometheus, Grafana, Jaeger)
+- platform-ingress: Ingress controller configuration
+
+**Project Configuration:**
+- Source restrictions (approved Git repositories and Helm charts)
+- Destination namespaces (platform-*, monitoring, ingress-*)
+- RBAC and audit controls
+- Signature verification for Git commits
+
+**Learning Objectives:**
+- Compare Flux and ArgoCD approaches
+- Configure GitOps automation
+- Implement source and destination policies
+- Enable multi-environment deployments
+
+#### Pulumi.yaml
+
+Pulumi project configuration file.
+
+**Defines:**
+- Project name: platform-cluster
+- Runtime: Python
+- Configuration parameters for cluster name, Kubernetes version, node count, environment, region
+- VirtualEnv setup for dependency isolation
+
+#### Pulumi.platform-sandbox.yaml / Pulumi.app-dev.yaml
+
+Per-environment Pulumi stack configuration files.
+
+| Key config | platform-sandbox | app-dev |
+|-----------|-----------------|---------|
+| `network:vpcCidr` | `10.0.0.0/16` | `10.1.0.0/16` |
+| `cluster:name` | `platform-sandbox` | `app-dev` |
+| `flux:gitopsRepoPath` | `./environments/platform-sandbox` | `./environments/app-dev` |
+
+Select a stack with `pulumi stack select platform-sandbox` before running `pulumi up`.
+
+### pulumi-cluster/ Directory
+
+Pulumi project for Kind cluster deployment.
+
+**Files:**
+- `__main__.py`: Kind cluster with configurable workers, networking, port mappings
+- `Pulumi.yaml`: Project configuration (common settings)
+- `Pulumi.platform-sandbox.yaml`: Stack config for platform-sandbox environment
+- `Pulumi.app-dev.yaml`: Stack config for app-dev environment
+- `requirements.txt`: Python dependencies (pulumi, pulumi-kubernetes, pyyaml)
+
+### test/ Directory
+
+Test automation for infrastructure validation.
+
+**Files:**
+- `infrastructure.bats`: BATS shell tests for cluster validation
+- Related Python tests: `test-cluster-health.py` (in root directory)
+
+
+## Orphan Files and Notes
+
+### Potential Orphan/Alternative Files
+
+The following files are complementary but not directly tied to chapter sections:
+
+1. **argocd-platform-app.yaml** - Alternative GitOps tool (Chapter 2 focuses on Flux, not ArgoCD)
+   - Recommendation: Keep for reference; note in README that Flux is primary pattern
+
+2. **pulumi-cluster/__main__.py** - Kind cluster via Pulumi (IaC approach)
+   - Recommendation: Use alongside the Kind CLI approach for comparing IaC vs imperative workflows
+
+3. **multi-env-config.yaml** - Standalone configuration comparison (informational, not executable)
+   - Recommendation: Keep for learning environment design principles
+
+All other files are core to the chapter content and should be retained.
+
+<br/>
+
 ## Key Configuration Points
 
 ### Network Configuration (modules/network.py)
@@ -1400,27 +1336,3 @@ pip list | grep -i pulumi
 # Run with detailed output
 python test-cluster-health.py -v
 ```
-
-## References
-
-- [Kind Documentation](https://kind.sigs.k8s.io/)
-- [Pulumi Kubernetes Provider](https://www.pulumi.com/docs/reference/pkg/kubernetes/)
-- [Pulumi Command Provider](https://www.pulumi.com/registry/packages/command/)
-- [Flux Documentation](https://fluxcd.io/docs/)
-- [Istio Documentation](https://istio.io/latest/docs/)
-- [OPA/Gatekeeper](https://open-policy-agent.github.io/gatekeeper/)
-- [cert-manager Documentation](https://cert-manager.io/)
-- [Kustomize Documentation](https://kustomize.io/)
-- [BATS Documentation](https://bats-core.readthedocs.io/)
-- [Kubernetes Security Best Practices](https://kubernetes.io/docs/concepts/security/)
-- [GitOps Principles](https://opengitops.dev/)
-
-## License
-
-All code in this chapter is provided as educational material for "The Platform Engineer's Handbook" published by Packt Publishing.
-
----
-
-**Author:** Ajay Chankramath (ajay@platformetrics.com)
-**Book:** The Platform Engineer's Handbook (Packt Publishing)
-**Last Updated**: September 2025
