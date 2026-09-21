@@ -380,8 +380,6 @@ k8sallowedregistries.constraints.gatekeeper.sh/allowed-registries created
 
 **Step 5a: Verify Istio Deployment**
 
-FAIL!
-
 ```bash
 # Istio is deployed via Flux HelmRelease — monitor deployment status
 $ kubectl rollout status deployment/istiod -n istio-system --timeout=5m
