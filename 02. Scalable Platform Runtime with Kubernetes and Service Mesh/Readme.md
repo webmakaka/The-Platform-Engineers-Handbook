@@ -204,6 +204,8 @@ platform-dev-worker          Ready    <none>          1m    v1.28.0
 platform-dev-worker2         Ready    <none>          1m    v1.28.0
 ```
 
+<br/>
+
 **Step 3c: Run Pulumi to Provision Namespaces and Quotas**
 
 Pulumi fetches the kubeconfig from the running Kind cluster automatically and creates namespaces, resource quotas, and limit ranges.
@@ -211,6 +213,8 @@ Pulumi fetches the kubeconfig from the running Kind cluster automatically and cr
 ```bash
 $ pulumi up --yes
 ```
+
+<br/>
 
 **Expected Output:**
 ```
@@ -229,10 +233,14 @@ Resources:
     + 16 created
 ```
 
+<br/>
+
 **Step 3d: Verify Namespaces**
 ```bash
 $ kubectl get namespaces --show-labels | grep pulumi
 ```
+
+<br/>
 
 **Expected Output:**
 ```
@@ -246,8 +254,6 @@ platform-system   Active   10s   environment=dev,managed-by=pulumi
 <br/>
 
 ### Phase 4: Platform Services Deployment (GitOps)
-
-**Important:** Flux must be installed **before** applying `platform-services.yaml`. The manifest contains Flux CRDs (HelmRelease, Kustomization, HelmRepository) that only exist after Flux is running. It also contains cert-manager and Gatekeeper CRDs that only exist after those tools are deployed by Flux.
 
 <br/>
 
@@ -276,7 +282,10 @@ $ helm install flux2 fluxcd-community/flux2 --namespace flux-system --create-nam
 flux check
 ```
 
+<br/>
+
 **Expected Output:**
+
 ```
 ► checking prerequisites
 ✓ kubernetes 1.28.0 >= 1.20.6
@@ -285,16 +294,23 @@ flux check
 all checks passed
 ```
 
+<br/>
+
 **Step 4c: Apply Platform Services and Create the Application Namespace**
 
 Apply the manifest. Namespaces, HelmRepositories, and HelmReleases will be created. Flux will start reconciling and install Istio, cert-manager, Prometheus, and Gatekeeper automatically. Some CRD-dependent resources (ClusterIssuers, Constraints) will warn on this first apply — that's expected.
 
+<br/>
+
 ```bash
-kubectl create namespace application
-kubectl apply -f platform-services.yaml
+$ kubectl create namespace application
+$ kubectl apply -f platform-services.yaml
 ```
 
+<br/>
+
 **Expected Output:**
+
 ```
 namespace/istio-system created
 helmrepository.source.toolkit.fluxcd.io/istio created
@@ -303,9 +319,13 @@ helmrelease.helm.toolkit.fluxcd.io/istio-base created
 # Warnings about ClusterIssuer, ConstraintTemplate — expected on first run
 ```
 
+<br/>
+
 **Step 4d: Wait for Flux to Reconcile, Then Re-Apply**
 
 Flux needs 1–2 minutes to install the Helm charts (cert-manager, Gatekeeper, etc.) which register the CRDs that the remaining resources depend on. Wait, then re-apply:
+
+<br/>
 
 ```bash
 # Monitor progress — wait until cert-manager and gatekeeper show Ready
@@ -315,7 +335,10 @@ flux get helmrelease -A
 sleep 60 && kubectl apply -f platform-services.yaml
 ```
 
+<br/>
+
 **Expected Output:**
+
 ```
 clusterissuer.cert-manager.io/letsencrypt-prod created
 clusterissuer.cert-manager.io/letsencrypt-staging created
@@ -325,19 +348,27 @@ constrainttemplate.templates.gatekeeper.sh/k8sallowedregistries unchanged
 # K8sAllowedRegistries Constraint may still warn — Gatekeeper needs ~10s more
 ```
 
+<br/>
+
 **Step 4e: Final Re-Apply for Gatekeeper Constraints**
 
 Gatekeeper generates Constraint CRDs from ConstraintTemplates asynchronously. A short wait and one more apply picks up any remaining Constraints:
 
+<br/>
+
 ```bash
 sleep 10 && kubectl apply -f platform-services.yaml
 ```
+
+<br/>
 
 **Expected Output (clean — no warnings):**
 ```
 k8sallowedregistries.constraints.gatekeeper.sh/allowed-registries created
 # Everything else shows 'unchanged'
 ```
+
+<br/>
 
 ### Phase 5: Service Mesh Configuration
 
@@ -347,25 +378,35 @@ k8sallowedregistries.constraints.gatekeeper.sh/allowed-registries created
 kubectl rollout status deployment/istiod -n istio-system --timeout=5m
 ```
 
+<br/>
+
 **Expected Output:**
 ```
 deployment "istiod" successfully rolled out
 ```
+
+<br/>
 
 **Step 5b: Enable Sidecar Injection**
 ```bash
 kubectl label namespace application istio-injection=enabled
 ```
 
+<br/>
+
 **Expected Output:**
 ```
 namespace/application labeled
 ```
 
+<br/>
+
 **Step 5c: Apply Service Mesh Configuration**
 ```bash
 kubectl apply -f istio-mesh-config.yaml
 ```
+
+<br/>
 
 **Expected Output:**
 ```
@@ -375,21 +416,31 @@ destinationrule.networking.istio.io/platform-api created
 ...
 ```
 
+<br/>
+
 **Step 5d: Verify Istio Configuration**
+
 ```bash
 kubectl get gateway -A
 kubectl get virtualservice -A
 kubectl get destinationrule -A
 ```
 
+<br/>
+
 **Expected Output:**
+
 ```
 NAMESPACE        NAME                AGE
 platform-apps    platform-gateway    2m
 platform-apps    platform-ingress    2m
 ```
 
+<br/>
+
 ### Phase 6: Namespace Provisioning
+
+<br/>
 
 **Step 6a: Provision Application Namespace**
 ```bash
@@ -401,6 +452,8 @@ python namespace-provisioner.py \
   --memory 20Gi \
   --pods 100
 ```
+
+<br/>
 
 **Expected Output:**
 ```
@@ -414,10 +467,12 @@ Creating service accounts for namespace 'app-team-1'...
 Namespace 'app-team-1' provisioned successfully!
 ```
 
+<br/>
+
 **Step 6b: Verify Namespace Configuration**
 ```bash
-kubectl get namespace app-team-1 -o yaml
-kubectl get resourcequota,limitrange,networkpolicy -n app-team-1
+$ kubectl get namespace app-team-1 -o yaml
+$ kubectl get resourcequota,limitrange,networkpolicy -n app-team-1
 ```
 
 **Expected Output:**
@@ -432,7 +487,11 @@ metadata:
 ...
 ```
 
+<br/>
+
 ### Phase 7: Infrastructure Testing
+
+<br/>
 
 **Step 7a: Run BATS Tests**
 ```bash
@@ -440,7 +499,10 @@ metadata:
 bats test/infrastructure.bats -v
 ```
 
+<br/>
+
 **Expected Output:**
+
 ```
  ✓ cluster_is_running
  ✓ namespaces_exist
@@ -450,10 +512,14 @@ bats test/infrastructure.bats -v
 4 tests, 0 failures
 ```
 
+<br/>
+
 **Step 7b: Run Python Health Checks**
 ```bash
 python test-cluster-health.py -v
 ```
+
+<br/>
 
 **Expected Output:**
 ```
@@ -474,6 +540,8 @@ Ran 8 tests in 0.5s
 
 OK
 ```
+
+<br/>
 
 ### Phase 8: Verification and Cleanup
 
@@ -497,6 +565,8 @@ kubectl get pods -n monitoring
 kubectl get pods -n gatekeeper-system
 ```
 
+<br/>
+
 **Expected Output:**
 ```
 NAME                          STATUS   ROLES           AGE
@@ -513,7 +583,10 @@ gatekeeper-system      Active   45m
 application            Active   30m
 ```
 
+<br/>
+
 **Step 8b: Clean Up (Optional)**
+
 ```bash
 # Destroy Pulumi stack
 cd pulumi-cluster
@@ -524,6 +597,8 @@ pulumi stack rm dev
 kind delete cluster --name platform-dev
 ```
 
+<br/>
+
 **Expected Output:**
 ```
 Deleting cluster "platform-dev" ...
@@ -532,8 +607,6 @@ Stack 'dev' has been removed!
 ```
 
 <br/>
-
-
 
 
 ---
