@@ -190,7 +190,7 @@ Set kubectl context to "kind-platform-dev"
 
 **Step 3b: Verify the Cluster is Running**
 ```bash
-kubectl get nodes
+$ kubectl get nodes
 ```
 
 <br/>
@@ -209,7 +209,7 @@ platform-dev-worker2         Ready    <none>          1m    v1.28.0
 Pulumi fetches the kubeconfig from the running Kind cluster automatically and creates namespaces, resource quotas, and limit ranges.
 
 ```bash
-pulumi up --yes
+$ pulumi up --yes
 ```
 
 **Expected Output:**
@@ -231,7 +231,7 @@ Resources:
 
 **Step 3d: Verify Namespaces**
 ```bash
-kubectl get namespaces --show-labels | grep pulumi
+$ kubectl get namespaces --show-labels | grep pulumi
 ```
 
 **Expected Output:**
@@ -243,25 +243,33 @@ monitoring        Active   10s   environment=dev,managed-by=pulumi
 platform-system   Active   10s   environment=dev,managed-by=pulumi
 ```
 
+<br/>
+
 ### Phase 4: Platform Services Deployment (GitOps)
 
 **Important:** Flux must be installed **before** applying `platform-services.yaml`. The manifest contains Flux CRDs (HelmRelease, Kustomization, HelmRepository) that only exist after Flux is running. It also contains cert-manager and Gatekeeper CRDs that only exist after those tools are deployed by Flux.
 
+<br/>
+
 **Step 4a: Install Flux GitOps Controller**
 ```bash
 # Option 1: Using Flux CLI (recommended)
-flux install --namespace flux-system
+$ flux install --namespace flux-system
 
 # Option 2: Using Helm (alternative)
-helm repo add fluxcd-community https://fluxcd-community.github.io/helm-charts
-helm install flux2 fluxcd-community/flux2 --namespace flux-system --create-namespace
+$ helm repo add fluxcd-community https://fluxcd-community.github.io/helm-charts
+$ helm install flux2 fluxcd-community/flux2 --namespace flux-system --create-namespace
 ```
+
+<br/>
 
 **Expected Output:**
 ```
 ✓ install completed in 45s
 ✓ components are healthy
 ```
+
+<br/>
 
 **Step 4b: Verify Flux Is Ready**
 ```bash
