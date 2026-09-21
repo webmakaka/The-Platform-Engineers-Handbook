@@ -57,12 +57,14 @@ This chapter teaches you how to configure production-ready Kubernetes platform c
 
 ## Step-by-Step Instructions
 
+<br/>
+
 ### Phase 1: Understanding Configuration (Read-Only)
 
 **Step 1a: Review Network Configuration**
 ```bash
 # Read modules/network.py to understand network topology
-cat modules/network.py
+$ cat modules/network.py
 # Key takeaway: NetworkConfig is root dataclass aggregating SubnetConfig,
 # ServiceMeshConfig, OPAConfig, and FirewallRule definitions
 ```
@@ -75,7 +77,7 @@ cat modules/network.py
 **Step 1b: Review Cluster Configuration**
 ```bash
 # Read modules/cluster.py to understand Kind cluster provisioning
-cat modules/cluster.py
+$ cat modules/cluster.py
 # Key takeaway: KindClusterManager orchestrates cluster creation with
 # kubeadm, containerd, and Pulumi resource management
 ```
@@ -85,14 +87,18 @@ cat modules/cluster.py
 - Namespace creation with resource quotas and limit ranges
 - Provider initialization for Kubernetes resource management
 
+<br/>
+
 ### Phase 2: Environment Setup
 
 **Step 2a: Create a Python Virtual Environment and Install Dependencies**
 ```bash
-cd pulumi-cluster
-python3 -m venv venv
-source venv/bin/activate      # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
+$ cd pulumi-cluster
+
+$ pip install uv
+$ uv venv --python=python3.12
+$ source .venv/bin/activate
+$ uv pip install -r requirements.txt
 ```
 
 The `requirements.txt` installs `pulumi`, `pulumi-kubernetes`, and `pyyaml`. Pulumi expects the virtual environment in a `venv/` directory (configured in `Pulumi.yaml`).
@@ -102,11 +108,15 @@ The `requirements.txt` installs `pulumi`, `pulumi-kubernetes`, and `pyyaml`. Pul
 Successfully installed pulumi-3.x.x pulumi-kubernetes-4.x.x pyyaml-6.x
 ```
 
+<br/>
+
 **Step 2b: Initialize Pulumi Stack**
 ```bash
-pulumi stack init dev
+$ pulumi stack init dev
 # Or select existing stack: pulumi stack select dev
 ```
+
+<br/>
 
 **Expected Output:**
 ```
@@ -115,20 +125,26 @@ Setting organization to 'personal'
 Default runtime language python
 ```
 
+<br/>
+
 **Step 2c: Configure Pulumi Settings**
 ```bash
 # For Kind cluster (local development):
-pulumi config set cluster:name platform-dev
-pulumi config set cluster:kubernetesVersion 1.27
+$ pulumi config set cluster:name platform-dev
+$ pulumi config set cluster:kubernetesVersion 1.27
 
-pulumi config set cluster:numWorkerNodes 2
+$ pulumi config set cluster:numWorkerNodes 2
 ```
+
+<br/>
 
 **Expected Output:**
 ```
 Set 'cluster:name' to 'platform-dev'
 Set 'cluster:kubernetesVersion' to '1.27'
 ```
+
+<br/>
 
 ### Phase 3: Cluster Deployment
 
