@@ -62,6 +62,7 @@ This chapter teaches you how to configure production-ready Kubernetes platform c
 ### Phase 1: Understanding Configuration (Read-Only)
 
 **Step 1a: Review Network Configuration**
+
 ```bash
 # Read modules/network.py to understand network topology
 $ cat modules/network.py
@@ -70,11 +71,13 @@ $ cat modules/network.py
 ```
 
 **Expected Output:**
+
 - Network configuration structure with DataClasses
 - Development and production network factory functions
 - Subnet CIDR validation and service mesh settings
 
 **Step 1b: Review Cluster Configuration**
+
 ```bash
 # Read modules/cluster.py to understand Kind cluster provisioning
 $ cat modules/cluster.py
@@ -83,6 +86,7 @@ $ cat modules/cluster.py
 ```
 
 **Expected Output:**
+
 - Kind cluster configuration with node definitions
 - Namespace creation with resource quotas and limit ranges
 - Provider initialization for Kubernetes resource management
@@ -104,6 +108,7 @@ $ uv pip install -r requirements.txt
 The `requirements.txt` installs `pulumi`, `pulumi-kubernetes`, and `pyyaml`. Pulumi expects the virtual environment in a `venv/` directory (configured in `Pulumi.yaml`).
 
 **Expected Output:**
+
 ```
 Successfully installed pulumi-3.x.x pulumi-kubernetes-4.x.x pyyaml-6.x
 ```
@@ -111,7 +116,9 @@ Successfully installed pulumi-3.x.x pulumi-kubernetes-4.x.x pyyaml-6.x
 <br/>
 
 **Step 2b: Initialize Pulumi Stack**
+
 ```bash
+// $ pulumi login --local
 $ pulumi stack init dev
 # Or select existing stack: pulumi stack select dev
 ```
@@ -119,6 +126,7 @@ $ pulumi stack init dev
 <br/>
 
 **Expected Output:**
+
 ```
 Created stack 'dev'
 Setting organization to 'personal'
@@ -128,20 +136,13 @@ Default runtime language python
 <br/>
 
 **Step 2c: Configure Pulumi Settings**
+
 ```bash
 # For Kind cluster (local development):
 $ pulumi config set cluster:name platform-dev
 $ pulumi config set cluster:kubernetesVersion 1.27
 
 $ pulumi config set cluster:numWorkerNodes 2
-```
-
-<br/>
-
-**Expected Output:**
-```
-Set 'cluster:name' to 'platform-dev'
-Set 'cluster:kubernetesVersion' to '1.27'
 ```
 
 <br/>
@@ -189,19 +190,15 @@ Set kubectl context to "kind-platform-dev"
 <br/>
 
 **Step 3b: Verify the Cluster is Running**
-```bash
-$ kubectl get nodes
-```
 
 <br/>
 
-**Expected Output:**
-
 ```
-NAME                         STATUS   ROLES           AGE   VERSION
-platform-dev-control-plane   Ready    control-plane   1m    v1.28.0
-platform-dev-worker          Ready    <none>          1m    v1.28.0
-platform-dev-worker2         Ready    <none>          1m    v1.28.0
+$ kubectl get nodes
+NAME                         STATUS     ROLES           AGE   VERSION
+platform-dev-control-plane   NotReady   control-plane   22s   v1.34.0
+platform-dev-worker          NotReady   <none>          11s   v1.34.0
+platform-dev-worker2         NotReady   <none>          11s   v1.34.0
 ```
 
 <br/>
@@ -236,6 +233,7 @@ Resources:
 <br/>
 
 **Step 3d: Verify Namespaces**
+
 ```bash
 $ kubectl get namespaces --show-labels | grep pulumi
 ```
@@ -243,6 +241,7 @@ $ kubectl get namespaces --show-labels | grep pulumi
 <br/>
 
 **Expected Output:**
+
 ```
 apps              Active   10s   environment=dev,managed-by=pulumi
 databases         Active   10s   environment=dev,managed-by=pulumi
@@ -258,6 +257,7 @@ platform-system   Active   10s   environment=dev,managed-by=pulumi
 <br/>
 
 **Step 4a: Install Flux GitOps Controller**
+
 ```bash
 # Option 1: Using Flux CLI (recommended)
 $ flux install --namespace flux-system
@@ -278,8 +278,11 @@ $ helm install flux2 fluxcd-community/flux2 --namespace flux-system --create-nam
 <br/>
 
 **Step 4b: Verify Flux Is Ready**
+
+<br/>
+
 ```bash
-flux check
+$ flux check
 ```
 
 <br/>
@@ -329,10 +332,10 @@ Flux needs 1–2 minutes to install the Helm charts (cert-manager, Gatekeeper, e
 
 ```bash
 # Monitor progress — wait until cert-manager and gatekeeper show Ready
-flux get helmrelease -A
+$ flux get helmrelease -A
 
 # Wait 60s for CRDs to fully register, then re-apply
-sleep 60 && kubectl apply -f platform-services.yaml
+$ sleep 60 && kubectl apply -f platform-services.yaml
 ```
 
 <br/>
@@ -357,12 +360,13 @@ Gatekeeper generates Constraint CRDs from ConstraintTemplates asynchronously. A 
 <br/>
 
 ```bash
-sleep 10 && kubectl apply -f platform-services.yaml
+$ sleep 10 && kubectl apply -f platform-services.yaml
 ```
 
 <br/>
 
 **Expected Output (clean — no warnings):**
+
 ```
 k8sallowedregistries.constraints.gatekeeper.sh/allowed-registries created
 # Everything else shows 'unchanged'
@@ -373,14 +377,16 @@ k8sallowedregistries.constraints.gatekeeper.sh/allowed-registries created
 ### Phase 5: Service Mesh Configuration
 
 **Step 5a: Verify Istio Deployment**
+
 ```bash
 # Istio is deployed via Flux HelmRelease — monitor deployment status
-kubectl rollout status deployment/istiod -n istio-system --timeout=5m
+$ kubectl rollout status deployment/istiod -n istio-system --timeout=5m
 ```
 
 <br/>
 
 **Expected Output:**
+
 ```
 deployment "istiod" successfully rolled out
 ```
@@ -388,13 +394,15 @@ deployment "istiod" successfully rolled out
 <br/>
 
 **Step 5b: Enable Sidecar Injection**
+
 ```bash
-kubectl label namespace application istio-injection=enabled
+$ kubectl label namespace application istio-injection=enabled
 ```
 
 <br/>
 
 **Expected Output:**
+
 ```
 namespace/application labeled
 ```
@@ -402,13 +410,15 @@ namespace/application labeled
 <br/>
 
 **Step 5c: Apply Service Mesh Configuration**
+
 ```bash
-kubectl apply -f istio-mesh-config.yaml
+$ kubectl apply -f istio-mesh-config.yaml
 ```
 
 <br/>
 
 **Expected Output:**
+
 ```
 peerauthentication.security.istio.io/default created
 virtualservice.networking.istio.io/platform-api created
@@ -421,9 +431,9 @@ destinationrule.networking.istio.io/platform-api created
 **Step 5d: Verify Istio Configuration**
 
 ```bash
-kubectl get gateway -A
-kubectl get virtualservice -A
-kubectl get destinationrule -A
+$ kubectl get gateway -A
+$ kubectl get virtualservice -A
+$ kubectl get destinationrule -A
 ```
 
 <br/>
@@ -443,8 +453,9 @@ platform-apps    platform-ingress    2m
 <br/>
 
 **Step 6a: Provision Application Namespace**
+
 ```bash
-python namespace-provisioner.py \
+$ python namespace-provisioner.py \
   --namespace app-team-1 \
   --env staging \
   --team backend \
@@ -456,6 +467,7 @@ python namespace-provisioner.py \
 <br/>
 
 **Expected Output:**
+
 ```
 --- Provisioning namespace: app-team-1 ---
 Creating namespace 'app-team-1'...
@@ -470,12 +482,14 @@ Namespace 'app-team-1' provisioned successfully!
 <br/>
 
 **Step 6b: Verify Namespace Configuration**
+
 ```bash
 $ kubectl get namespace app-team-1 -o yaml
 $ kubectl get resourcequota,limitrange,networkpolicy -n app-team-1
 ```
 
 **Expected Output:**
+
 ```
 apiVersion: v1
 kind: Namespace
@@ -494,9 +508,12 @@ metadata:
 <br/>
 
 **Step 7a: Run BATS Tests**
+
+<br/>
+
 ```bash
 # From the root code directory
-bats test/infrastructure.bats -v
+$ bats test/infrastructure.bats -v
 ```
 
 <br/>
@@ -515,8 +532,9 @@ bats test/infrastructure.bats -v
 <br/>
 
 **Step 7b: Run Python Health Checks**
+
 ```bash
-python test-cluster-health.py -v
+$ python test-cluster-health.py -v
 ```
 
 <br/>
@@ -545,29 +563,33 @@ OK
 
 ### Phase 8: Verification and Cleanup
 
+<br/>
+
 **Step 8a: Verify All Components**
+
 ```bash
 # Check cluster status
-kubectl get nodes -o wide
-kubectl get namespaces
+$ kubectl get nodes -o wide
+$ kubectl get namespaces
 
 # Check Flux
-flux get all
+$ flux get all
 
 # Check Istio
-kubectl get pods -n istio-system
-kubectl get virtualservice -A
+$ kubectl get pods -n istio-system
+$ kubectl get virtualservice -A
 
 # Check monitoring
-kubectl get pods -n monitoring
+$ kubectl get pods -n monitoring
 
 # Check OPA/Gatekeeper
-kubectl get pods -n gatekeeper-system
+$ kubectl get pods -n gatekeeper-system
 ```
 
 <br/>
 
 **Expected Output:**
+
 ```
 NAME                          STATUS   ROLES           AGE
 platform-cluster-node-1       Ready    control-plane   2h
@@ -589,12 +611,12 @@ application            Active   30m
 
 ```bash
 # Destroy Pulumi stack
-cd pulumi-cluster
-pulumi destroy
-pulumi stack rm dev
+$ cd pulumi-cluster
+$ pulumi destroy
+$ pulumi stack rm dev
 
 # Or delete Kind cluster
-kind delete cluster --name platform-dev
+$ kind delete cluster --name platform-dev
 ```
 
 <br/>
