@@ -276,26 +276,3 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: platform-operator-sa
-
-################################################################################
-# Platform Admin RBAC Summary
-#
-# Roles Defined:
-#   1. platform-admin: Full elevated access for platform engineering
-#   2. platform-admin-restricted: Limited admin access with safety checks
-#   3. platform-audit-viewer: Read-only for security auditors
-#   4. platform-operator: Operational role for workload management
-#
-# Key Restrictions:
-#   - Cannot directly grant cluster-admin role (must request change)
-#   - Must use specific resource verbs, no wildcards
-#   - Service accounts scoped to specific namespace
-#   - Audit logging recommended for all admin operations
-#
-# Best Practices:
-#   1. Use groups for team-based access (not individual users)
-#   2. Regularly audit and review bindings
-#   3. Require approval for role changes
-#   4. Implement approval workflow for elevated operations
-#   5. Monitor admin user actions via audit logs
-################################################################################
