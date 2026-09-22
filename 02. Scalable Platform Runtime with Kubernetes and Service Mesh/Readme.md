@@ -95,6 +95,15 @@ $ cat modules/cluster.py
 
 ### Phase 2: Environment Setup
 
+
+<br/>
+
+```
+$ docker pull ghcr.io/fluxcd/notification-controller:v1.9.4
+```
+
+<br/>
+
 **Step 3a: Create the Kind Cluster**
 
 The Kind cluster must exist **before** running Pulumi. Pulumi provisions namespaces and quotas on an already-running cluster.
@@ -102,7 +111,7 @@ The Kind cluster must exist **before** running Pulumi. Pulumi provisions namespa
 <br/>
 
 ```bash
-$ kind create cluster --name platform-dev --image kindest/node:v1.34.0 --config - <<EOF
+$ kind create cluster --name platform-dev --image kindest/node:v1.37.0 --config - <<EOF
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
@@ -116,6 +125,13 @@ nodes:
   - role: worker
 EOF
 ```
+
+<br/>
+
+```
+$ kind load docker-image ghcr.io/fluxcd/notification-controller:v1.9.4 --name platform-dev
+```
+
 
 <br/>
 
