@@ -55,6 +55,10 @@ This chapter teaches you how to configure production-ready Kubernetes platform c
 
 <br/>
 
+### [TODO] update cert-manager and Gatekeeper from platform-services.yaml
+
+<br/>
+
 ## Step-by-Step Instructions
 
 <br/>
