@@ -95,60 +95,6 @@ $ cat modules/cluster.py
 
 ### Phase 2: Environment Setup
 
-**Step 2a: Create a Python Virtual Environment and Install Dependencies**
-```bash
-$ cd pulumi-cluster
-
-// $ pip install uv
-$ uv venv --python=python3.12
-$ source .venv/bin/activate
-$ uv pip install -r requirements.txt
-```
-
-The `requirements.txt` installs `pulumi`, `pulumi-kubernetes`, and `pyyaml`. Pulumi expects the virtual environment in a `venv/` directory (configured in `Pulumi.yaml`).
-
-**Expected Output:**
-
-```
-Successfully installed pulumi-3.x.x pulumi-kubernetes-4.x.x pyyaml-6.x
-```
-
-<br/>
-
-**Step 2b: Initialize Pulumi Stack**
-
-```bash
-// $ pulumi login --local
-$ pulumi stack init dev
-# Or select existing stack: pulumi stack select dev
-```
-
-<br/>
-
-**Expected Output:**
-
-```
-Created stack 'dev'
-Setting organization to 'personal'
-Default runtime language python
-```
-
-<br/>
-
-**Step 2c: Configure Pulumi Settings**
-
-```bash
-# For Kind cluster (local development):
-$ pulumi config set cluster:name platform-dev
-$ pulumi config set cluster:kubernetesVersion 1.27
-
-$ pulumi config set cluster:numWorkerNodes 2
-```
-
-<br/>
-
-### Phase 3: Cluster Deployment
-
 **Step 3a: Create the Kind Cluster**
 
 The Kind cluster must exist **before** running Pulumi. Pulumi provisions namespaces and quotas on an already-running cluster.
@@ -200,6 +146,47 @@ platform-dev-control-plane   NotReady   control-plane   22s   v1.34.0
 platform-dev-worker          NotReady   <none>          11s   v1.34.0
 platform-dev-worker2         NotReady   <none>          11s   v1.34.0
 ```
+
+
+**Step 2a: Create a Python Virtual Environment and Install Dependencies**
+
+```bash
+$ cd pulumi-cluster
+$ pip install -r requirements.txt
+```
+
+<br/>
+
+**Step 2b: Initialize Pulumi Stack**
+
+```bash
+// $ pulumi login --local
+$ pulumi stack init dev
+# Or select existing stack: pulumi stack select dev
+```
+
+<br/>
+
+**Expected Output:**
+
+```
+Created stack 'dev'
+Setting organization to 'personal'
+Default runtime language python
+```
+
+<br/>
+
+**Step 2c: Configure Pulumi Settings**
+
+```bash
+# For Kind cluster (local development):
+$ pulumi config set cluster:name platform-dev
+$ pulumi config set cluster:kubernetesVersion 1.27
+
+$ pulumi config set cluster:numWorkerNodes 2
+```
+
 
 <br/>
 
