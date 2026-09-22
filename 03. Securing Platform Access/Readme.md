@@ -355,6 +355,12 @@ $ kubectl get deployment -n gatekeeper-system
 
 <br/>
 
+```
+$ kubectl delete k8sallowedregistries allowed-registries
+```
+
+<br/>
+
 **Step 5.2: Apply Resource Limits Policy**
 
 ```bash
