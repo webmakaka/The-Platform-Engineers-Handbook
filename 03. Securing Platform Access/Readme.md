@@ -108,24 +108,30 @@ Timestamp: [current date/time]
 Found X potential security issues
 ```
 
-**Next Steps:** Review findings and prioritize critical issues. Proceed to Phase 2 to implement remediation.
+<br/>
 
 ### Phase 2: Identity & Access Management Setup
 
 **Step 2.0: Start Keycloak**
 
 Start a local Keycloak instance for development. We use port 8180 because port 8080 is already used by the Kind cluster's control-plane port mapping from Chapter 2:
+
 ```bash
-docker run -d -p 8180:8080 \
+$ docker run -d -p 8180:8080 \
   -e KEYCLOAK_ADMIN=admin \
   -e KEYCLOAK_ADMIN_PASSWORD=admin \
   quay.io/keycloak/keycloak:latest start-dev
 ```
 
+<br/>
+
 Verify Keycloak is running (may take 30–60 seconds to start):
+
 ```bash
-curl -s http://localhost:8180/health/ready
+$ curl -s http://localhost:8180/health/ready
 ```
+
+<br/>
 
 **Step 2.1: Store Keycloak Credentials in Bitwarden**
 
