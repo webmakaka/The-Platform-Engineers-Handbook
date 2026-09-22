@@ -280,3 +280,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: platform-operator-sa
+    namespace: default
