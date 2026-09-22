@@ -199,7 +199,7 @@ $ python keycloak-realm-config.py --verify
 $ kubectl create namespace platform-engineering
 
 # Apply platform admin roles
-$ kubectl apply -f rbac-platform-admin.yaml
+$ kubectl apply -f rbac/rbac-platform-admin.yaml
 ```
 
 <br/>
@@ -208,13 +208,17 @@ $ kubectl apply -f rbac-platform-admin.yaml
 
 ```bash
 // Apply developer roles to dev namespace
-$ kubectl apply -f rbac-developer-role.yaml
+$ kubectl apply -f rbac/rbac-developer-role.yaml
+```
 
+<br/>
+
+```bash
 // Verify developer role (namespace-scoped)
-$ kubectl get role -n dev developer-role -o yaml
+// $ kubectl get role -n dev developer-role -o yaml
 
 // Verify service account
-$ kubectl get serviceaccount -n dev developer-user
+// $ kubectl get serviceaccount -n dev developer-user
 ```
 
 <br/>
@@ -226,11 +230,11 @@ $ kubectl get serviceaccount -n dev developer-user
 $ kubectl create namespace platform
 
 // Apply CI/CD service account with scoped permissions
-$ kubectl apply -f service-account.yaml
+$ kubectl apply -f rbac/cicd-deployer-sa.yaml.yaml
 
-$ kubectl apply -f role-minimal-deployer.yaml
+$ kubectl apply -f rbac/role-minimal-deployer.yaml
 
-$ kubectl apply -f rolebinding.yaml
+$ kubectl apply -f rbac/cicd-deployer-role-minimal-deployer-binding.yaml
 
 // Verify service account
 $ kubectl get serviceaccount -n platform cicd-deployer
