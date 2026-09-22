@@ -31,12 +31,12 @@ EOF
 <br/>
 
 ```
-# Install cert-manager
+// Install cert-manager
 $ helm repo add jetstack https://charts.jetstack.io
 $ helm repo update
 $ helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set crds.enabled=true
 
-# Install OPA Gatekeeper
+// Install OPA Gatekeeper
 $ kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/v3.14.0/deploy/gatekeeper.yaml
 ```
 
@@ -158,38 +158,42 @@ $ echo '{"type":1,"name":"peh-keycloak","login":{"username":"admin","password":"
 $ bw sync --session "$BW_SESSION"
 ```
 
+<br/>
+
 **Step 2.2: Configure Keycloak Realm**
 
 ```bash
 # Option A: Load credentials from Bitwarden (recommended)
 source load-secrets.sh
 
-# Option B: Set environment variables manually
+// Option B: Set environment variables manually
 $ export KEYCLOAK_URL="http://localhost:8180"
 $ export KEYCLOAK_ADMIN="admin"
 $ export KEYCLOAK_PASSWORD="admin"
 
-# Run configuration script
+// Run configuration script
 $ python keycloak-realm-config.py
 
-# Verify configuration
+// Verify configuration
 $ python keycloak-realm-config.py --verify
 ```
+
+<br/>
 
 **Expected Output:**
 
 ```
-INFO - Authenticating with Keycloak...
-INFO - Successfully authenticated
-INFO - Creating realm: platform-engineering
-INFO - Creating OAuth client: kubernetes-cli
-INFO - Creating groups: platform-admins, platform-users
-INFO - Configuration complete!
+2026-09-22 14:53:15,727 - INFO - Successfully authenticated with Keycloak
+2026-09-22 14:53:15,734 - INFO - Realm verified: platform-engineering
+2026-09-22 14:53:15,739 - INFO - Found 7 roles
+2026-09-22 14:53:15,751 - INFO - Found 7 clients
+2026-09-22 14:53:15,751 - INFO - Configuration verification completed
 ```
 
 <br/>
 
 **Keycloak Setup Details:**
+
 - Creates dedicated "platform-engineering" realm
 - OAuth client "kubernetes-cli" configured for Kubernetes API
 - Groups: "platform-admins" (cluster-admin), "platform-users" (namespace-scoped)
