@@ -115,9 +115,10 @@ Found X potential security issues
 Start a local Keycloak instance for development. We use port 8180 because port 8080 is already used by the Kind cluster's control-plane port mapping from Chapter 2:
 
 ```bash
-$ docker run -d -p 8180:8080 \
+$ docker run -d -p 8180:8080 -p 9000:9000 \
   -e KEYCLOAK_ADMIN=admin \
   -e KEYCLOAK_ADMIN_PASSWORD=admin \
+  -e KC_HEALTH_ENABLED=true \
   quay.io/keycloak/keycloak:latest start-dev
 ```
 
@@ -126,7 +127,7 @@ $ docker run -d -p 8180:8080 \
 Verify Keycloak is running (may take 30–60 seconds to start):
 
 ```bash
-$ curl -s http://localhost:8180/health/ready
+$ curl -s http://localhost:9000/health/ready
 ```
 
 <br/>
