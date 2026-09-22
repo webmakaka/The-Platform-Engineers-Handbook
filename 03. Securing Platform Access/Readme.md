@@ -190,6 +190,8 @@ $ python keycloak-realm-config.py --verify
 
 <br/>
 
+---
+
 ### Phase 3: RBAC Configuration & Role Binding
 
 **Step 3.1: Apply Platform Admin RBAC**
@@ -252,6 +254,8 @@ $ kubectl auth can-i get pods \
 ```
 
 <br/>
+
+---
 
 ### Phase 4: TLS Certificate Management
 
@@ -328,6 +332,8 @@ demo-app-cert     False   demo-app-tls  2m
 
 
 <br/>
+
+---
 
 ### Phase 5: Policy-as-Code with OPA/Gatekeeper
 
@@ -428,6 +434,8 @@ EOF
 
 <br/>
 
+---
+
 ### Phase 6: Demo Application Deployment & Testing
 
 **Step 6.1: Verify Demo App Deployment**
@@ -520,18 +528,21 @@ Egress:
 
 <br/>
 
+---
+
 ### Phase 7: RBAC Testing & Validation
 
 **Step 7.1: Run RBAC Test Suite**
 
 ```bash
 # Run comprehensive RBAC validation tests
-$ python test-rbac-permissions.py -v
+$ python rbac/test-rbac-permissions.py -v
 
 # Expected output shows all tests passing
 ```
 
 **Expected Output:**
+
 ```
 ============================================================
 Chapter 3: RBAC Permission Tests
@@ -584,7 +595,7 @@ $ kubectl auth can-i create namespaces \
 **Step 8.1: Re-run Security Audit**
 
 ```bash
-# Verify all security configurations
+// Verify all security configurations
 $ bash security-audit.sh
 
 # Expected: Issues should be resolved, audit shows compliance
@@ -621,7 +632,7 @@ Found 0 critical security issues
 # - verb: get/create/update/delete
 # - namespace: the namespace (or cluster-wide)
 
-# Verify no service account tokens in logs
+// Verify no service account tokens in logs
 $ grep -r "system:serviceaccount" /var/log/kubernetes/audit.log \
   | grep -v "system:serviceaccount:kube-" \
   | head -5
