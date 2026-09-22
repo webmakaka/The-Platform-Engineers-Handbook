@@ -195,7 +195,7 @@ $ python keycloak-realm-config.py --verify
 **Step 3.1: Apply Platform Admin RBAC**
 
 ```bash
-# Create platform-engineering namespace
+// Create platform-engineering namespace
 $ kubectl create namespace platform-engineering
 
 # Apply platform admin roles
