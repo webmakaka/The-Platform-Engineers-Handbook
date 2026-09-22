@@ -163,6 +163,7 @@ $ python keycloak-realm-config.py --verify
 ```
 
 **Expected Output:**
+
 ```
 INFO - Authenticating with Keycloak...
 INFO - Successfully authenticated
@@ -172,6 +173,8 @@ INFO - Creating groups: platform-admins, platform-users
 INFO - Configuration complete!
 ```
 
+<br/>
+
 **Keycloak Setup Details:**
 - Creates dedicated "platform-engineering" realm
 - OAuth client "kubernetes-cli" configured for Kubernetes API
@@ -179,24 +182,28 @@ INFO - Configuration complete!
 - Token lifetime: 15 minutes (configurable)
 - Realm policies enable group inheritance to Kubernetes RBAC
 
-**Next Steps:** Configure API server with OIDC parameters. Move to Phase 3 for RBAC.
+<br/>
 
 ### Phase 3: RBAC Configuration & Role Binding
 
 **Step 3.1: Apply Platform Admin RBAC**
+
 ```bash
 # Create platform-engineering namespace
-kubectl create namespace platform-engineering
+$ kubectl create namespace platform-engineering
 
 # Apply platform admin roles
-kubectl apply -f rbac-platform-admin.yaml
+$ kubectl apply -f rbac-platform-admin.yaml
 
 # Verify roles created
-kubectl get clusterrole platform-admin -o yaml | head -20
-kubectl get clusterrolebinding platform-admin-binding -o yaml
+$ kubectl get clusterrole platform-admin -o yaml | head -20
+$ kubectl get clusterrolebinding platform-admin-binding -o yaml
 ```
 
+<br/>
+
 **Expected Output:**
+
 ```
 clusterrole.rbac.authorization.k8s.io/platform-admin created
 clusterrolebinding.rbac.authorization.k8s.io/platform-admin-binding created
@@ -204,16 +211,18 @@ clusterrole.rbac.authorization.k8s.io/platform-audit-viewer created
 ...
 ```
 
+<br/>
+
 **Step 3.2: Apply Developer RBAC**
 ```bash
 # Apply developer roles to dev namespace
-kubectl apply -f rbac-developer-role.yaml
+$ kubectl apply -f rbac-developer-role.yaml
 
 # Verify developer role (namespace-scoped)
-kubectl get role -n dev developer-role -o yaml
+$ kubectl get role -n dev developer-role -o yaml
 
 # Verify service account
-kubectl get serviceaccount -n dev developer-user
+$ kubectl get serviceaccount -n dev developer-user
 ```
 
 **Expected Output:**
