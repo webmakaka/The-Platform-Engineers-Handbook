@@ -342,26 +342,17 @@ $ kubectl get deployment -n gatekeeper-system
 **Step 5.2: Apply Resource Limits Policy**
 
 ```bash
-# Apply ConstraintTemplate for resource limits
+// Apply ConstraintTemplate for resource limits
 $ kubectl apply -f template-resource-limits.yaml
 
 # Wait for Gatekeeper to generate the CRD from the template
 $ sleep 10
 
-# Apply the Constraint that activates the policy
+// Apply the Constraint that activates the policy
 $ kubectl apply -f constraint-resource-limits.yaml
 
-# Verify constraint
+// Verify constraint
 $ kubectl get constraints
-```
-
-<br/>
-
-**Expected Output:**
-
-```
-constrainttemplate.templates.gatekeeper.sh/k8srequireresourcelimits created
-k8srequireresourcelimits.constraints.gatekeeper.sh/require-resource-limits created
 ```
 
 <br/>
@@ -369,16 +360,16 @@ k8srequireresourcelimits.constraints.gatekeeper.sh/require-resource-limits creat
 **Step 5.3: Apply Namespace Labels Policy**
 
 ```bash
-# Apply ConstraintTemplate for required labels
+// Apply ConstraintTemplate for required labels
 $ kubectl apply -f template-required-labels.yaml
 
-# Wait for CRD generation
+// Wait for CRD generation
 $ sleep 10
 
-# Apply the Constraint
+// Apply the Constraint
 $ kubectl apply -f constraint-namespace-labels.yaml
 
-# Verify both constraints
+// Verify both constraints
 $ kubectl get constraints
 ```
 
@@ -468,29 +459,30 @@ demo-app-cert     True    demo-app-tls   3m
 **Step 6.2: Test Pod Disruption Budget**
 
 ```bash
-# Verify PDB allows graceful disruptions
-kubectl get pdb -n demo-app
+// Verify PDB allows graceful disruptions
+$ kubectl get pdb -n demo-app
 
 # Expected: minAvailable: 2, meaning at least 2 pods must be running
 
-# Simulate pod eviction (controlled test)
-kubectl delete pod -n demo-app <pod-name>
+// Simulate pod eviction (controlled test)
+$ kubectl delete pod -n demo-app <pod-name>
 
-# Observe: deployment controller will recreate pod while maintaining minAvailable
-kubectl get pods -n demo-app -w
+// Observe: deployment controller will recreate pod while maintaining minAvailable
+$ kubectl get pods -n demo-app -w
 ```
 
 <br/>
 
 **Step 6.3: Test Network Policies**
+
 ```bash
 # Verify network policy
-kubectl get networkpolicy -n demo-app
+$ kubectl get networkpolicy -n demo-app
 
 # Description shows:
 # - Ingress: allowed from nginx-ingress namespace on ports 8080, 9090
 # - Egress: allowed to DNS (port 53) and HTTPS (port 443) outbound
-kubectl describe networkpolicy demo-app-network-policy -n demo-app
+$ kubectl describe networkpolicy demo-app-network-policy -n demo-app
 ```
 
 <br/>
@@ -553,7 +545,7 @@ OK
 **Step 7.2: Manual RBAC Verification**
 
 ```bash
-# Test platform-admin permissions
+// Test platform-admin permissions
 $ kubectl auth can-i get pods \
   --as=admin \
   -n kube-system
@@ -620,7 +612,7 @@ Found 0 critical security issues
 # - namespace: the namespace (or cluster-wide)
 
 # Verify no service account tokens in logs
-grep -r "system:serviceaccount" /var/log/kubernetes/audit.log \
+$ grep -r "system:serviceaccount" /var/log/kubernetes/audit.log \
   | grep -v "system:serviceaccount:kube-" \
   | head -5
 ```
