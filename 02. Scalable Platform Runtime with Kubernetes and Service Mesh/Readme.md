@@ -198,7 +198,7 @@ Default runtime language python
 ```bash
 # For Kind cluster (local development):
 $ pulumi config set cluster:name platform-dev
-$ pulumi config set cluster:kubernetesVersion 1.27
+$ pulumi config set cluster:kubernetesVersion 1.37
 
 $ pulumi config set cluster:numWorkerNodes 2
 ```
@@ -384,7 +384,7 @@ k8sallowedregistries.constraints.gatekeeper.sh/allowed-registries created
 **Step 5a: Verify Istio Deployment**
 
 ```bash
-# Istio is deployed via Flux HelmRelease — monitor deployment status
+// Istio is deployed via Flux HelmRelease — monitor deployment status
 $ kubectl rollout status deployment/istiod -n istio-system --timeout=5m
 ```
 
