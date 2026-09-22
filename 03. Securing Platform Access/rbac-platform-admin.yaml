@@ -162,7 +162,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: platform-admin-binding
+  name: platform-admin-sa-binding
   labels:
     app: platform-engineering
     component: rbac
@@ -173,6 +173,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: platform-admin-sa
+    namespace: default
 
 ---
 # ClusterRole: platform-audit-viewer
