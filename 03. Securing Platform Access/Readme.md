@@ -240,7 +240,7 @@ $ kubectl apply -f rbac/cicd-deployer-role-minimal-deployer-binding.yaml
 $ kubectl get serviceaccount -n platform cicd-deployer
 
 # Test permissions
-$ kubectl auth can-i update deployments \
+$ kubectl auth can-i update deployments/scale \
   --as=system:serviceaccount:platform:cicd-deployer \
   -n platform
 # Expected: yes
@@ -254,7 +254,6 @@ $ kubectl auth can-i get pods \
 <br/>
 
 ### Phase 4: TLS Certificate Management
-
 
 <br/>
 
