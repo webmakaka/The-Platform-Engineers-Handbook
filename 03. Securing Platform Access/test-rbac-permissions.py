@@ -20,16 +20,16 @@ class TestRBACConfigs(unittest.TestCase):
         self.code_dir = os.path.dirname(__file__)
 
     def test_platform_admin_role_exists(self):
-        path = os.path.join(self.code_dir, "rbac-platform-admin.yaml")
+        path = os.path.join(self.code_dir, "rbac/rbac-platform-admin.yaml")
         self.assertTrue(os.path.exists(path))
 
     def test_developer_role_exists(self):
-        path = os.path.join(self.code_dir, "rbac-developer-role.yaml")
+        path = os.path.join(self.code_dir, "rbac/rbac-developer-role.yaml")
         self.assertTrue(os.path.exists(path))
 
     def test_developer_role_restricts_system_namespaces(self):
         """Developer role should not grant access to kube-system."""
-        path = os.path.join(self.code_dir, "rbac-developer-role.yaml")
+        path = os.path.join(self.code_dir, "rbac/rbac-developer-role.yaml")
         content = open(path).read()
         # Developer role should be namespace-scoped, not cluster-admin
         self.assertNotIn("cluster-admin", content,
@@ -37,7 +37,7 @@ class TestRBACConfigs(unittest.TestCase):
 
     def test_platform_admin_has_namespace_management(self):
         """Platform admin should be able to manage namespaces."""
-        path = os.path.join(self.code_dir, "rbac-platform-admin.yaml")
+        path = os.path.join(self.code_dir, "rbac/rbac-platform-admin.yaml")
         content = open(path).read()
         self.assertIn("namespaces", content,
                       "Platform admin should manage namespaces")
