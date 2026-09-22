@@ -228,6 +228,10 @@ $ kubectl create namespace platform
 // Apply CI/CD service account with scoped permissions
 $ kubectl apply -f service-account.yaml
 
+$ kubectl apply -f role-minimal-deployer.yaml
+
+$ kubectl apply -f rolebinding.yaml
+
 // Verify service account
 $ kubectl get serviceaccount -n platform cicd-deployer
 
