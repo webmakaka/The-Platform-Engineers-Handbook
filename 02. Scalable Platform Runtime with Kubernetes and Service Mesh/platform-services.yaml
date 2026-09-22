@@ -96,7 +96,6 @@ spec:
       version: '>=1.17.0'
   values:
     name: ingress-gateway
-    namespace: istio-system
     replicaCount: 2
     service:
       type: LoadBalancer
