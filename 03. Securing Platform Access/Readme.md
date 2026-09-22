@@ -30,15 +30,6 @@ EOF
 
 <br/>
 
-```
-// Install cert-manager
-$ helm repo add jetstack https://charts.jetstack.io
-$ helm repo update
-$ helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set crds.enabled=true
-```
-
-<br/>
-
 ### System Requirements
 - Kubernetes cluster 1.21+ or local Kind cluster for testing
 - kubectl configured and authenticated to cluster
@@ -255,6 +246,18 @@ $ kubectl auth can-i get pods \
 <br/>
 
 ### Phase 4: TLS Certificate Management
+
+
+<br/>
+
+```
+// Install cert-manager
+$ helm repo add jetstack https://charts.jetstack.io
+$ helm repo update
+$ helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set crds.enabled=true
+```
+
+<br/>
 
 **Step 4.1: Verify cert-manager Installation**
 
@@ -849,13 +852,3 @@ kubectl run test-pod --image=curl:latest -it -- sh
 - Rotate service account tokens regularly
 - Implement Falco or similar runtime security monitoring
 - Enable cluster autoscaling with node security hardening
-
-## Additional Resources
-
-- [Kubernetes RBAC Documentation](https://kubernetes.io/docs/reference/access-authn-authz/rbac/)
-- [cert-manager Documentation](https://cert-manager.io/docs/)
-- [Keycloak Documentation](https://www.keycloak.org/documentation.html)
-- [Kubernetes Security Best Practices](https://kubernetes.io/docs/concepts/security/)
-- [OPA/Gatekeeper Documentation](https://open-policy-agent.github.io/gatekeeper/)
-- [Kubernetes Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
-- [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
