@@ -214,6 +214,7 @@ clusterrole.rbac.authorization.k8s.io/platform-audit-viewer created
 <br/>
 
 **Step 3.2: Apply Developer RBAC**
+
 ```bash
 # Apply developer roles to dev namespace
 $ kubectl apply -f rbac-developer-role.yaml
@@ -226,6 +227,7 @@ $ kubectl get serviceaccount -n dev developer-user
 ```
 
 **Expected Output:**
+
 ```
 namespace/dev created
 role.rbac.authorization.k8s.io/developer-role created
@@ -234,29 +236,31 @@ rolebinding.rbac.authorization.k8s.io/developer-binding created
 ```
 
 **Step 3.3: Apply CI/CD Service Account**
+
 ```bash
 # Create platform namespace for CI/CD
-kubectl create namespace platform
+$ kubectl create namespace platform
 
 # Apply CI/CD service account with scoped permissions
-kubectl apply -f service-account.yaml
+$ kubectl apply -f service-account.yaml
 
 # Verify service account
-kubectl get serviceaccount -n platform cicd-deployer
+$ kubectl get serviceaccount -n platform cicd-deployer
 
 # Test permissions
-kubectl auth can-i update deployments \
+$ kubectl auth can-i update deployments \
   --as=system:serviceaccount:platform:cicd-deployer \
   -n platform
 # Expected: yes
 
-kubectl auth can-i get pods \
+$ kubectl auth can-i get pods \
   --as=system:serviceaccount:platform:cicd-deployer \
   -n production
 # Expected: no (cannot access other namespaces)
 ```
 
 **Expected Output:**
+
 ```
 serviceaccount/cicd-deployer created
 rolebinding.rbac.authorization.k8s.io/cicd-deployer-binding created
@@ -264,29 +268,34 @@ yes
 no
 ```
 
-**Next Steps:** Verify RBAC with test suite, then move to Phase 4 for TLS.
+<br/>
 
 ### Phase 4: TLS Certificate Management
 
 **Step 4.1: Verify cert-manager Installation**
+
 ```bash
 # Check cert-manager namespace
-kubectl get deployment -n cert-manager
+$ kubectl get deployment -n cert-manager
 
 # Verify cert-manager CRDs
-kubectl get crd | grep cert-manager
+$ kubectl get crd | grep cert-manager
 ```
 
+<br/>
+
 **Step 4.2: Apply Certificate Issuers**
+
 ```bash
 # Apply cert-manager configuration
-kubectl apply -f cert-manager-config.yaml
+$ kubectl apply -f cert-manager-config.yaml
 
 # Verify cluster issuers
-kubectl get clusterissuer
+$ kubectl get clusterissuer
 ```
 
 **Expected Output:**
+
 ```
 NAME                      READY   AGE
 letsencrypt-staging       True    1m
@@ -295,19 +304,25 @@ selfsigned-issuer         True    1m
 internal-ca-issuer        True    1m
 ```
 
+<br/>
+
 **Step 4.3: Create Demo App Namespace & Certificates**
+
 ```bash
 # Apply demo app with certificate
-kubectl apply -f demo-app-deployment.yaml
+$ kubectl apply -f demo-app-deployment.yaml
 
 # Watch certificate issuance
-kubectl get certificate -n demo-app -w
+$ kubectl get certificate -n demo-app -w
 
 # Check certificate status
-kubectl describe certificate demo-app-cert -n demo-app
+$ kubectl describe certificate demo-app-cert -n demo-app
 ```
 
+<br/>
+
 **Expected Output:**
+
 ```
 NAME              READY   SECRET        AGE
 demo-app-cert     False   demo-app-tls  2m
@@ -315,65 +330,79 @@ demo-app-cert     False   demo-app-tls  2m
 
 > **Note:** On a local Kind cluster, certificates will show `Ready=False` because Let's Encrypt issuers require real DNS and the self-signed CA needs time to propagate. This is expected — the resources are created correctly and the pattern is what matters. Press `Ctrl+C` after a few seconds to stop the watch and move on.
 
-**Next Steps:** Proceed to Phase 5 for policy enforcement.
+
+<br/>
 
 ### Phase 5: Policy-as-Code with OPA/Gatekeeper
 
 **Step 5.1: Deploy OPA Gatekeeper**
+
 ```bash
 # Install OPA Gatekeeper
-kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/v3.14.0/deploy/gatekeeper.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/v3.14.0/deploy/gatekeeper.yaml
 
 # Wait for gatekeeper webhook deployment
-kubectl wait --for=condition=Ready pod \
+$ kubectl wait --for=condition=Ready pod \
   -l gatekeeper.sh/system=yes \
   -n gatekeeper-system \
   --timeout=300s
 
 # Verify installation
-kubectl get deployment -n gatekeeper-system
+$ kubectl get deployment -n gatekeeper-system
 ```
+
+<br/>
 
 **Step 5.2: Apply Resource Limits Policy**
+
 ```bash
 # Apply ConstraintTemplate for resource limits
-kubectl apply -f template-resource-limits.yaml
+$ kubectl apply -f template-resource-limits.yaml
 
 # Wait for Gatekeeper to generate the CRD from the template
-sleep 10
+$ sleep 10
 
 # Apply the Constraint that activates the policy
-kubectl apply -f constraint-resource-limits.yaml
+$ kubectl apply -f constraint-resource-limits.yaml
 
 # Verify constraint
-kubectl get constraints
+$ kubectl get constraints
 ```
 
+<br/>
+
 **Expected Output:**
+
 ```
 constrainttemplate.templates.gatekeeper.sh/k8srequireresourcelimits created
 k8srequireresourcelimits.constraints.gatekeeper.sh/require-resource-limits created
 ```
 
+<br/>
+
 **Step 5.3: Apply Namespace Labels Policy**
+
 ```bash
 # Apply ConstraintTemplate for required labels
-kubectl apply -f template-required-labels.yaml
+$ kubectl apply -f template-required-labels.yaml
 
 # Wait for CRD generation
-sleep 10
+$ sleep 10
 
 # Apply the Constraint
-kubectl apply -f constraint-namespace-labels.yaml
+$ kubectl apply -f constraint-namespace-labels.yaml
 
 # Verify both constraints
-kubectl get constraints
+$ kubectl get constraints
 ```
 
+<br/>
+
 **Step 5.4: Test Policy Violations**
+
 ```bash
 # This should FAIL - no resource limits
-kubectl apply -f - <<EOF
+$ kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Pod
 metadata:
@@ -391,7 +420,7 @@ EOF
 # Container 'nginx' must have memory limits set)
 
 # This should SUCCEED - has resource limits
-kubectl apply -f - <<EOF
+$ kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Pod
 metadata:
@@ -410,24 +439,27 @@ EOF
 # Expected: pod/good-pod created
 ```
 
-**Next Steps:** Move to Phase 6 for demo application testing.
+<br/>
 
 ### Phase 6: Demo Application Deployment & Testing
 
 **Step 6.1: Verify Demo App Deployment**
 ```bash
 # Check deployment status
-kubectl get deployment -n demo-app
-kubectl get pods -n demo-app
+$ kubectl get deployment -n demo-app
+$ kubectl get pods -n demo-app
 
 # Check ingress
-kubectl get ingress -n demo-app
+$ kubectl get ingress -n demo-app
 
 # Verify certificate issued
-kubectl get certificate -n demo-app
+$ kubectl get certificate -n demo-app
 ```
 
+<br/>
+
 **Expected Output:**
+
 ```
 NAME       READY   UP-TO-DATE   AVAILABLE   AGE
 demo-app   3/3     3            3           2m
@@ -444,7 +476,10 @@ NAME              READY   SECRET         AGE
 demo-app-cert     True    demo-app-tls   3m
 ```
 
+<br/>
+
 **Step 6.2: Test Pod Disruption Budget**
+
 ```bash
 # Verify PDB allows graceful disruptions
 kubectl get pdb -n demo-app
@@ -458,6 +493,8 @@ kubectl delete pod -n demo-app <pod-name>
 kubectl get pods -n demo-app -w
 ```
 
+<br/>
+
 **Step 6.3: Test Network Policies**
 ```bash
 # Verify network policy
@@ -469,7 +506,10 @@ kubectl get networkpolicy -n demo-app
 kubectl describe networkpolicy demo-app-network-policy -n demo-app
 ```
 
+<br/>
+
 **Expected Output:**
+
 ```
 NAME                        POD-SELECTOR   AGE
 demo-app-network-policy     app=demo-app   5m
@@ -489,14 +529,15 @@ Egress:
     TCP port 443 (HTTPS)
 ```
 
-**Next Steps:** Proceed to Phase 7 for security validation.
+<br/>
 
 ### Phase 7: RBAC Testing & Validation
 
 **Step 7.1: Run RBAC Test Suite**
+
 ```bash
 # Run comprehensive RBAC validation tests
-python test-rbac-permissions.py -v
+$ python test-rbac-permissions.py -v
 
 # Expected output shows all tests passing
 ```
@@ -520,36 +561,41 @@ Ran 9 tests in 0.02s
 OK
 ```
 
+<br/>
+
 **Step 7.2: Manual RBAC Verification**
 ```bash
 # Test platform-admin permissions
-kubectl auth can-i get pods \
+$ kubectl auth can-i get pods \
   --as=admin \
   -n kube-system
 # Expected: yes (admin can see system pods)
 
 # Test developer permissions
-kubectl auth can-i get pods \
+$ kubectl auth can-i get pods \
   --as=developer \
   -n dev
 # Expected: yes (developer can see own namespace)
 
-kubectl auth can-i get pods \
+$ kubectl auth can-i get pods \
   --as=developer \
   -n kube-system
 # Expected: no (developer cannot see system namespace)
 
-kubectl auth can-i create namespaces \
+$ kubectl auth can-i create namespaces \
   --as=developer
 # Expected: no (developer cannot create namespaces)
 ```
 
+<br/>
+
 ### Phase 8: Security Verification & Audit Compliance
 
 **Step 8.1: Re-run Security Audit**
+
 ```bash
 # Verify all security configurations
-bash security-audit.sh
+$ bash security-audit.sh
 
 # Expected: Issues should be resolved, audit shows compliance
 ```
@@ -570,7 +616,10 @@ bash security-audit.sh
 Found 0 critical security issues
 ```
 
+<br/>
+
 **Step 8.2: Verify Audit Logging**
+
 ```bash
 # Check Kubernetes audit logs (if configured)
 # Logs should show all API server access with identity information
@@ -587,10 +636,12 @@ grep -r "system:serviceaccount" /var/log/kubernetes/audit.log \
   | head -5
 ```
 
+<br/>
 
 ## Cleanup (Reset for Re-Recording)
 
 To reset all Chapter 3 resources and start from scratch:
+
 ```bash
 # Stop and remove Keycloak container
 docker rm -f $(docker ps -aq --filter ancestor=quay.io/keycloak/keycloak) 2>/dev/null
