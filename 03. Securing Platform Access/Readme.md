@@ -13,7 +13,7 @@ This directory contains comprehensive examples and tools for implementing securi
 <br/>
 
 ```bash
-$ kind create cluster --name platform-dev --config - <<EOF
+$ kind create cluster --name platform-dev --image kindest/node:v1.34.0 --config - <<EOF
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
