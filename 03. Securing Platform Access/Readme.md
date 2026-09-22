@@ -10,28 +10,37 @@ This directory contains comprehensive examples and tools for implementing securi
 
 ### Running This Chapter Standalone
 
-> If you are jumping into this chapter without completing earlier chapters, use these commands to set up the infrastructure dependencies. If you already have them running, skip this section.
-
-> **Note:** If you completed Chapter 2, your Kind cluster is already running. Otherwise, create one first.
+<br/>
 
 ```bash
-# 1. Start Docker Desktop (macOS: open from Applications or Spotlight)
-open -a "Docker"
-# Wait for the Docker engine to start before continuing
+$ kind create cluster --name platform-dev --config - <<EOF
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 8080
+      - containerPort: 443
+        hostPort: 8443
+  - role: worker
+  - role: worker
+EOF
+```
 
-# 2. Create a Kind cluster (skip if you already have one)
-kind get clusters                       # Check for existing clusters
-kind create cluster --name platform-dev # Create one if none listed
-kubectl get nodes                       # Verify node(s) are Ready
+<br/>
 
+```
 # Install cert-manager
-helm repo add jetstack https://charts.jetstack.io
-helm repo update
-helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set crds.enabled=true
+$ helm repo add jetstack https://charts.jetstack.io
+$ helm repo update
+$ helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set crds.enabled=true
 
 # Install OPA Gatekeeper
-kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/v3.14.0/deploy/gatekeeper.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/v3.14.0/deploy/gatekeeper.yaml
 ```
+
+
 
 <br/>
 
