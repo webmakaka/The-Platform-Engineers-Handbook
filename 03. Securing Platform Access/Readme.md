@@ -212,21 +212,6 @@ $ kubectl create namespace platform-engineering
 
 # Apply platform admin roles
 $ kubectl apply -f rbac-platform-admin.yaml
-
-# Verify roles created
-$ kubectl get clusterrole platform-admin -o yaml | head -20
-$ kubectl get clusterrolebinding platform-admin-binding -o yaml
-```
-
-<br/>
-
-**Expected Output:**
-
-```
-clusterrole.rbac.authorization.k8s.io/platform-admin created
-clusterrolebinding.rbac.authorization.k8s.io/platform-admin-binding created
-clusterrole.rbac.authorization.k8s.io/platform-audit-viewer created
-...
 ```
 
 <br/>
@@ -234,24 +219,17 @@ clusterrole.rbac.authorization.k8s.io/platform-audit-viewer created
 **Step 3.2: Apply Developer RBAC**
 
 ```bash
-# Apply developer roles to dev namespace
+// Apply developer roles to dev namespace
 $ kubectl apply -f rbac-developer-role.yaml
 
-# Verify developer role (namespace-scoped)
+// Verify developer role (namespace-scoped)
 $ kubectl get role -n dev developer-role -o yaml
 
-# Verify service account
+// Verify service account
 $ kubectl get serviceaccount -n dev developer-user
 ```
 
-**Expected Output:**
-
-```
-namespace/dev created
-role.rbac.authorization.k8s.io/developer-role created
-rolebinding.rbac.authorization.k8s.io/developer-binding created
-...
-```
+<br/>
 
 **Step 3.3: Apply CI/CD Service Account**
 
