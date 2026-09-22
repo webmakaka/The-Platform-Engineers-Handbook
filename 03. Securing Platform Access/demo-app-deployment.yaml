@@ -456,31 +456,3 @@ spec:
         target:
           type: Utilization
           averageUtilization: 80
-
-################################################################################
-# Verification Commands
-#
-# Check deployment status:
-#   kubectl get deployment -n demo-app
-#   kubectl describe deployment demo-app -n demo-app
-#
-# Check service:
-#   kubectl get service -n demo-app
-#
-# Check ingress:
-#   kubectl get ingress -n demo-app
-#   kubectl describe ingress demo-app-ingress -n demo-app
-#
-# Check certificate:
-#   kubectl get certificate -n demo-app
-#   kubectl describe certificate demo-app-cert -n demo-app
-#
-# Check pod status:
-#   kubectl get pods -n demo-app -o wide
-#   kubectl logs -n demo-app <pod-name>
-#
-# Test access:
-#   curl -k https://demo-app.example.com
-#   kubectl port-forward -n demo-app svc/demo-app 8080:80
-#
-################################################################################
