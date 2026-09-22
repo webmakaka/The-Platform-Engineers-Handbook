@@ -6,8 +6,6 @@ This directory contains comprehensive examples and tools for implementing securi
 
 <br/>
 
-<br/>
-
 ## Prerequisites
 
 ### Running This Chapter Standalone
@@ -33,8 +31,9 @@ helm install cert-manager jetstack/cert-manager --namespace cert-manager --creat
 
 # Install OPA Gatekeeper
 kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/v3.14.0/deploy/gatekeeper.yaml
-
 ```
+
+<br/>
 
 ### System Requirements
 - Kubernetes cluster 1.21+ or local Kind cluster for testing
@@ -49,6 +48,7 @@ kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/
 - **OPA Gatekeeper**: `kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/v3.14.0/deploy/gatekeeper.yaml`
 
 ### Python Dependencies
+
 ```bash
 pip install requests
 ```
@@ -61,23 +61,29 @@ pip install requests
   - `--oidc-username-claim=preferred_username`
   - `--oidc-groups-claim=groups`
 
+---
+
 ## Step-by-Step Instructions
+
+<br/>
 
 ### Phase 1: Security Audit & Assessment
 
 **Step 1.1: Audit Current Cluster Security**
+
 ```bash
 # Run comprehensive security audit
-bash security-audit.sh
+$ bash security-audit.sh
 
 # Audit specific namespace
-bash security-audit.sh --namespace kube-system
+$ bash security-audit.sh --namespace kube-system
 
 # Verbose output for detailed findings
-bash security-audit.sh --verbose
+$ bash security-audit.sh --verbose
 ```
 
 **Expected Output:**
+
 ```
 === Kubernetes Security Audit ===
 Timestamp: [current date/time]
