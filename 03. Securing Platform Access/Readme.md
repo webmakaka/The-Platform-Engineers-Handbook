@@ -128,6 +128,19 @@ Verify Keycloak is running (may take 30–60 seconds to start):
 
 ```bash
 $ curl -s http://localhost:9000/health/ready
+{
+    "status": "UP",
+    "checks": [
+        {
+            "name": "Graceful Shutdown",
+            "status": "UP"
+        },
+        {
+            "name": "Keycloak Initialized",
+            "status": "UP"
+        }
+    ]
+}
 ```
 
 <br/>
