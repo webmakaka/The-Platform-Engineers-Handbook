@@ -494,7 +494,7 @@ $ kubectl get pods -n demo-app -w
 **Step 6.3: Test Network Policies**
 
 ```bash
-# Verify network policy
+// Verify network policy
 $ kubectl get networkpolicy -n demo-app
 
 # Description shows:
@@ -536,7 +536,7 @@ Egress:
 
 ```bash
 # Run comprehensive RBAC validation tests
-$ python rbac/test-rbac-permissions.py -v
+$ python test-rbac-permissions.py -v
 
 # Expected output shows all tests passing
 ```
