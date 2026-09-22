@@ -4,53 +4,9 @@
 
 This directory contains comprehensive examples and tools for implementing security best practices in Kubernetes-based platforms. The chapter covers securing platform access through multiple layers: OAuth/OIDC-based identity and access management with Keycloak, role-based access control (RBAC), policy-as-code enforcement with Open Policy Agent (OPA), network policies for zero-trust networking, and automated TLS certificate management. These examples enable platform teams to balance developer autonomy with protecting platform system components from accidental damage while implementing the principle of least privilege.
 
-## Code-to-Chapter Mapping
+<br/>
 
-### Security Auditing & Assessment
-
-| File | Section | Purpose |
-|------|---------|---------|
-| `security-audit.sh` | "Understanding platform security requirements" | Bash script for quick security auditing and vulnerability scanning. Identifies overly permissive RoleBindings, service accounts with excessive permissions, pods running as root, missing resource limits, and pods with privileged mode enabled. Supports namespace-scoped and cluster-wide auditing. |
-
-### RBAC Configuration
-
-| File | Section | Purpose |
-|------|---------|---------|
-| `rbac-platform-admin.yaml` | "Implementing Role-Based Access Control (RBAC)" | Kubernetes manifests defining ClusterRole and ClusterRoleBinding for platform administrators. Includes four personas: `platform-admin` (elevated permissions), `platform-admin-restricted` (limited admin with safety checks), `platform-audit-viewer` (read-only for security auditors), and `platform-operator` (workload management without administrative access). Demonstrates the principle of least privilege for platform team members. |
-| `rbac-developer-role.yaml` | "Implementing Role-Based Access Control (RBAC)" | Kubernetes Role and RoleBinding resources for platform developers. Defines `developer-role` (namespace-scoped management of deployments, services, and pods) and `developer-readonly-role` (view-only access). ServiceAccount `developer-user` is provided for automation/CI-CD integration. Implements namespace isolation preventing cross-team access. |
-| `service-account.yaml` | "Securing CI/CD with service accounts" and "Principle of least privilege in practice" | Kubernetes ServiceAccount for CI/CD pipelines with minimal required permissions. Features `automountServiceAccountToken: false` for security, RoleBinding to `platform-deployer` role (deployment-only permissions), and guidance on using short-lived TokenRequest API instead of long-lived secrets. Demonstrates scoped service account permissions for high-risk deployment pipelines. |
-
-### TLS Certificate Management
-
-| File | Section | Purpose |
-|------|---------|---------|
-| `cert-manager-config.yaml` | "Automated TLS certificate management" | cert-manager ClusterIssuer and Certificate configurations for automatic TLS certificate generation and renewal. Includes Let's Encrypt staging/production issuers, internal CA setup for mTLS, and certificate resources for platform API, demo app, and Keycloak. Eliminates manual certificate management friction that causes teams to deploy without encryption. |
-
-### Demo Application & Network Security
-
-| File | Section | Purpose |
-|------|---------|---------|
-| `demo-app-deployment.yaml` | "Building the demo application experience" and "Zero-Trust networking and network policies" | Complete Kubernetes Deployment demonstrating secure application practices that pilot teams will face. Includes: ServiceAccount with minimal privileges, ConfigMap/Secret management, security context (non-root user, read-only filesystem, dropped capabilities), resource requests/limits, health checks, affinity rules for HA, and NetworkPolicy restricting ingress/egress traffic. Ingress with automatic TLS (cert-manager annotations), PodDisruptionBudget for availability, and HorizontalPodAutoscaler for auto-scaling. Simulates complete developer experience from code to running application. |
-
-### Policy-as-Code Enforcement
-
-| File | Section | Purpose |
-|------|---------|---------|
-| `template-resource-limits.yaml` | "Policy-as-code guardrails with OPA" | OPA Gatekeeper ConstraintTemplate enforcing that all containers specify CPU and memory resource limits. Prevents unbounded resource consumption and ensures fair scheduling. Used to reject deployment attempts that violate resource limit policies. |
-| `constraint-namespace-labels.yaml` | "Policy-as-code guardrails with OPA" | OPA Gatekeeper Constraint enforcing required labels on namespaces (team ownership, cost-center allocation, environment classification). Demonstrates how policy-as-code works alongside RBAC to prevent configuration drift and enforce compliance regardless of who creates resources. |
-
-### Testing & Validation
-
-| File | Section | Purpose |
-|------|---------|---------|
-| `test-rbac-permissions.py` | "Implementing Role-Based Access Control (RBAC)" | Python test suite validating RBAC configuration files. Tests verify developer roles don't grant cluster-admin access, platform admin roles manage namespaces, demo app has resource limits and security context, and cert-manager configuration is properly defined. Supports test-driven validation of security posture. |
-| `keycloak-realm-config.py` | "Installing and configuring Keycloak" and "OIDC configuration and creating platform identities" | Python script to automate Keycloak realm configuration for platform SSO integration. Creates Keycloak realm, OAuth2/OIDC client, roles (platform-admins, platform-users), user groups and mappings, and realm policies. Supports authentication, realm/client creation, user/group management, and verification workflows. Enables teams to have centralized identity management with short-lived tokens. |
-
-### Secrets Management (Bitwarden Integration)
-
-| File | Section | Purpose |
-|------|---------|---------|
-| `load-secrets.sh` | Secrets Management (cross-chapter) | Retrieves Keycloak admin credentials from Bitwarden vault. Exports `KEYCLOAK_ADMIN`, `KEYCLOAK_PASSWORD`, and `KEYCLOAK_URL` so you don't need to hardcode or manually export them. Sources the shared `bw-helper.sh` from Ch1. |
+<br/>
 
 ## Prerequisites
 
@@ -601,6 +557,86 @@ grep -r "system:serviceaccount" /var/log/kubernetes/audit.log \
   | head -5
 ```
 
+
+## Cleanup (Reset for Re-Recording)
+
+To reset all Chapter 3 resources and start from scratch:
+```bash
+# Stop and remove Keycloak container
+docker rm -f $(docker ps -aq --filter ancestor=quay.io/keycloak/keycloak) 2>/dev/null
+
+# Delete namespaces (removes all namespace-scoped resources within them)
+kubectl delete namespace demo-app dev platform-engineering platform --ignore-not-found
+
+# Delete cluster-scoped RBAC
+kubectl delete clusterrole platform-admin platform-admin-restricted platform-audit-viewer platform-operator --ignore-not-found
+kubectl delete clusterrolebinding platform-admin-binding platform-admin-sa-binding platform-audit-viewer-binding platform-operator-binding --ignore-not-found
+
+# Delete cert-manager ClusterIssuers (including internal CA issuer)
+kubectl delete clusterissuer letsencrypt-staging letsencrypt-production selfsigned-issuer selfsigned-ca internal-ca-issuer --ignore-not-found
+
+# Delete Gatekeeper constraints and templates
+kubectl delete k8srequireresourcelimits require-resource-limits --ignore-not-found
+kubectl delete k8srequiredlabels require-namespace-labels --ignore-not-found
+kubectl delete constrainttemplate k8srequireresourcelimits k8srequiredlabels --ignore-not-found
+
+# Delete any leftover test pods
+kubectl delete pod test-compliant test-noncompliant good-pod bad-pod -n demo-app --ignore-not-found 2>/dev/null
+```
+
+<br/>
+
+## Code-to-Chapter Mapping
+
+### Security Auditing & Assessment
+
+| File | Section | Purpose |
+|------|---------|---------|
+| `security-audit.sh` | "Understanding platform security requirements" | Bash script for quick security auditing and vulnerability scanning. Identifies overly permissive RoleBindings, service accounts with excessive permissions, pods running as root, missing resource limits, and pods with privileged mode enabled. Supports namespace-scoped and cluster-wide auditing. |
+
+### RBAC Configuration
+
+| File | Section | Purpose |
+|------|---------|---------|
+| `rbac-platform-admin.yaml` | "Implementing Role-Based Access Control (RBAC)" | Kubernetes manifests defining ClusterRole and ClusterRoleBinding for platform administrators. Includes four personas: `platform-admin` (elevated permissions), `platform-admin-restricted` (limited admin with safety checks), `platform-audit-viewer` (read-only for security auditors), and `platform-operator` (workload management without administrative access). Demonstrates the principle of least privilege for platform team members. |
+| `rbac-developer-role.yaml` | "Implementing Role-Based Access Control (RBAC)" | Kubernetes Role and RoleBinding resources for platform developers. Defines `developer-role` (namespace-scoped management of deployments, services, and pods) and `developer-readonly-role` (view-only access). ServiceAccount `developer-user` is provided for automation/CI-CD integration. Implements namespace isolation preventing cross-team access. |
+| `service-account.yaml` | "Securing CI/CD with service accounts" and "Principle of least privilege in practice" | Kubernetes ServiceAccount for CI/CD pipelines with minimal required permissions. Features `automountServiceAccountToken: false` for security, RoleBinding to `platform-deployer` role (deployment-only permissions), and guidance on using short-lived TokenRequest API instead of long-lived secrets. Demonstrates scoped service account permissions for high-risk deployment pipelines. |
+
+### TLS Certificate Management
+
+| File | Section | Purpose |
+|------|---------|---------|
+| `cert-manager-config.yaml` | "Automated TLS certificate management" | cert-manager ClusterIssuer and Certificate configurations for automatic TLS certificate generation and renewal. Includes Let's Encrypt staging/production issuers, internal CA setup for mTLS, and certificate resources for platform API, demo app, and Keycloak. Eliminates manual certificate management friction that causes teams to deploy without encryption. |
+
+### Demo Application & Network Security
+
+| File | Section | Purpose |
+|------|---------|---------|
+| `demo-app-deployment.yaml` | "Building the demo application experience" and "Zero-Trust networking and network policies" | Complete Kubernetes Deployment demonstrating secure application practices that pilot teams will face. Includes: ServiceAccount with minimal privileges, ConfigMap/Secret management, security context (non-root user, read-only filesystem, dropped capabilities), resource requests/limits, health checks, affinity rules for HA, and NetworkPolicy restricting ingress/egress traffic. Ingress with automatic TLS (cert-manager annotations), PodDisruptionBudget for availability, and HorizontalPodAutoscaler for auto-scaling. Simulates complete developer experience from code to running application. |
+
+### Policy-as-Code Enforcement
+
+| File | Section | Purpose |
+|------|---------|---------|
+| `template-resource-limits.yaml` | "Policy-as-code guardrails with OPA" | OPA Gatekeeper ConstraintTemplate enforcing that all containers specify CPU and memory resource limits. Prevents unbounded resource consumption and ensures fair scheduling. Used to reject deployment attempts that violate resource limit policies. |
+| `constraint-namespace-labels.yaml` | "Policy-as-code guardrails with OPA" | OPA Gatekeeper Constraint enforcing required labels on namespaces (team ownership, cost-center allocation, environment classification). Demonstrates how policy-as-code works alongside RBAC to prevent configuration drift and enforce compliance regardless of who creates resources. |
+
+### Testing & Validation
+
+| File | Section | Purpose |
+|------|---------|---------|
+| `test-rbac-permissions.py` | "Implementing Role-Based Access Control (RBAC)" | Python test suite validating RBAC configuration files. Tests verify developer roles don't grant cluster-admin access, platform admin roles manage namespaces, demo app has resource limits and security context, and cert-manager configuration is properly defined. Supports test-driven validation of security posture. |
+| `keycloak-realm-config.py` | "Installing and configuring Keycloak" and "OIDC configuration and creating platform identities" | Python script to automate Keycloak realm configuration for platform SSO integration. Creates Keycloak realm, OAuth2/OIDC client, roles (platform-admins, platform-users), user groups and mappings, and realm policies. Supports authentication, realm/client creation, user/group management, and verification workflows. Enables teams to have centralized identity management with short-lived tokens. |
+
+### Secrets Management (Bitwarden Integration)
+
+| File | Section | Purpose |
+|------|---------|---------|
+| `load-secrets.sh` | Secrets Management (cross-chapter) | Retrieves Keycloak admin credentials from Bitwarden vault. Exports `KEYCLOAK_ADMIN`, `KEYCLOAK_PASSWORD`, and `KEYCLOAK_URL` so you don't need to hardcode or manually export them. Sources the shared `bw-helper.sh` from Ch1. |
+
+
+<br/>
+
 ## Companion Website
 
 The companion website at https://peh-packt.platformetrics.com/ provides:
@@ -668,31 +704,7 @@ Users should follow along with the chapter while executing code from this direct
 3. **Gradual Privilege Escalation**: Platform provides escape hatches with logging, not broad admin access
 4. **Documentation**: Security audit reports help developers understand what's forbidden and why
 
-## Cleanup (Reset for Re-Recording)
-
-To reset all Chapter 3 resources and start from scratch:
-```bash
-# Stop and remove Keycloak container
-docker rm -f $(docker ps -aq --filter ancestor=quay.io/keycloak/keycloak) 2>/dev/null
-
-# Delete namespaces (removes all namespace-scoped resources within them)
-kubectl delete namespace demo-app dev platform-engineering platform --ignore-not-found
-
-# Delete cluster-scoped RBAC
-kubectl delete clusterrole platform-admin platform-admin-restricted platform-audit-viewer platform-operator --ignore-not-found
-kubectl delete clusterrolebinding platform-admin-binding platform-admin-sa-binding platform-audit-viewer-binding platform-operator-binding --ignore-not-found
-
-# Delete cert-manager ClusterIssuers (including internal CA issuer)
-kubectl delete clusterissuer letsencrypt-staging letsencrypt-production selfsigned-issuer selfsigned-ca internal-ca-issuer --ignore-not-found
-
-# Delete Gatekeeper constraints and templates
-kubectl delete k8srequireresourcelimits require-resource-limits --ignore-not-found
-kubectl delete k8srequiredlabels require-namespace-labels --ignore-not-found
-kubectl delete constrainttemplate k8srequireresourcelimits k8srequiredlabels --ignore-not-found
-
-# Delete any leftover test pods
-kubectl delete pod test-compliant test-noncompliant good-pod bad-pod -n demo-app --ignore-not-found 2>/dev/null
-```
+<br/>
 
 ## Troubleshooting
 
@@ -785,13 +797,3 @@ kubectl run test-pod --image=curl:latest -it -- sh
 - [OPA/Gatekeeper Documentation](https://open-policy-agent.github.io/gatekeeper/)
 - [Kubernetes Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
 - [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
-
-## License
-
-Example code for educational purposes in "The Platform Engineer's Handbook" published by Packt Publishing.
-
----
-
-**Author:** Ajay Chankramath (ajay@platformetrics.com)
-**Book:** The Platform Engineer's Handbook (Packt Publishing)
-**Last Updated**: October 2025
