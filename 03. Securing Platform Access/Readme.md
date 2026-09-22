@@ -35,9 +35,6 @@ EOF
 $ helm repo add jetstack https://charts.jetstack.io
 $ helm repo update
 $ helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set crds.enabled=true
-
-// Install OPA Gatekeeper
-$ kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/v3.23.1/deploy/gatekeeper.yaml
 ```
 
 <br/>
@@ -234,13 +231,13 @@ $ kubectl get serviceaccount -n dev developer-user
 **Step 3.3: Apply CI/CD Service Account**
 
 ```bash
-# Create platform namespace for CI/CD
+// Create platform namespace for CI/CD
 $ kubectl create namespace platform
 
-# Apply CI/CD service account with scoped permissions
+// Apply CI/CD service account with scoped permissions
 $ kubectl apply -f service-account.yaml
 
-# Verify service account
+// Verify service account
 $ kubectl get serviceaccount -n platform cicd-deployer
 
 # Test permissions
@@ -255,15 +252,6 @@ $ kubectl auth can-i get pods \
 # Expected: no (cannot access other namespaces)
 ```
 
-**Expected Output:**
-
-```
-serviceaccount/cicd-deployer created
-rolebinding.rbac.authorization.k8s.io/cicd-deployer-binding created
-yes
-no
-```
-
 <br/>
 
 ### Phase 4: TLS Certificate Management
@@ -271,10 +259,10 @@ no
 **Step 4.1: Verify cert-manager Installation**
 
 ```bash
-# Check cert-manager namespace
+// Check cert-manager namespace
 $ kubectl get deployment -n cert-manager
 
-# Verify cert-manager CRDs
+// Verify cert-manager CRDs
 $ kubectl get crd | grep cert-manager
 ```
 
@@ -283,12 +271,14 @@ $ kubectl get crd | grep cert-manager
 **Step 4.2: Apply Certificate Issuers**
 
 ```bash
-# Apply cert-manager configuration
+// Apply cert-manager configuration
 $ kubectl apply -f cert-manager-config.yaml
 
-# Verify cluster issuers
+// Verify cluster issuers
 $ kubectl get clusterissuer
 ```
+
+<br/>
 
 **Expected Output:**
 
@@ -305,13 +295,13 @@ internal-ca-issuer        True    1m
 **Step 4.3: Create Demo App Namespace & Certificates**
 
 ```bash
-# Apply demo app with certificate
+// Apply demo app with certificate
 $ kubectl apply -f demo-app-deployment.yaml
 
-# Watch certificate issuance
+// Watch certificate issuance
 $ kubectl get certificate -n demo-app -w
 
-# Check certificate status
+// Check certificate status
 $ kubectl describe certificate demo-app-cert -n demo-app
 ```
 
@@ -334,16 +324,16 @@ demo-app-cert     False   demo-app-tls  2m
 **Step 5.1: Deploy OPA Gatekeeper**
 
 ```bash
-# Install OPA Gatekeeper
-$ kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/v3.14.0/deploy/gatekeeper.yaml
+// Install OPA Gatekeeper
+$ kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/v3.23.1/deploy/gatekeeper.yaml
 
-# Wait for gatekeeper webhook deployment
+// Wait for gatekeeper webhook deployment
 $ kubectl wait --for=condition=Ready pod \
   -l gatekeeper.sh/system=yes \
   -n gatekeeper-system \
   --timeout=300s
 
-# Verify installation
+// Verify installation
 $ kubectl get deployment -n gatekeeper-system
 ```
 
@@ -440,6 +430,7 @@ EOF
 ### Phase 6: Demo Application Deployment & Testing
 
 **Step 6.1: Verify Demo App Deployment**
+
 ```bash
 # Check deployment status
 $ kubectl get deployment -n demo-app
@@ -560,6 +551,7 @@ OK
 <br/>
 
 **Step 7.2: Manual RBAC Verification**
+
 ```bash
 # Test platform-admin permissions
 $ kubectl auth can-i get pods \
@@ -597,6 +589,7 @@ $ bash security-audit.sh
 ```
 
 **Expected Output:**
+
 ```
 === Kubernetes Security Audit ===
 [OK] Cluster is accessible
