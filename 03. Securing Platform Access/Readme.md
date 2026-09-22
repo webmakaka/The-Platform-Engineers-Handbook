@@ -40,8 +40,6 @@ $ helm install cert-manager jetstack/cert-manager --namespace cert-manager --cre
 $ kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/v3.14.0/deploy/gatekeeper.yaml
 ```
 
-
-
 <br/>
 
 ### System Requirements
@@ -136,30 +134,32 @@ $ curl -s http://localhost:8180/health/ready
 **Step 2.1: Store Keycloak Credentials in Bitwarden**
 
 If using Bitwarden for secrets management (recommended), create the vault item so `load-secrets.sh` can retrieve credentials automatically:
+
 ```bash
 # Create the peh-keycloak vault item
-echo '{"type":1,"name":"peh-keycloak","login":{"username":"admin","password":"admin","uris":[{"uri":"http://localhost:8180"}]}}' \
+$ echo '{"type":1,"name":"peh-keycloak","login":{"username":"admin","password":"admin","uris":[{"uri":"http://localhost:8180"}]}}' \
   | bw encode | bw create item --session "$BW_SESSION"
 
 # Sync to make the item available
-bw sync --session "$BW_SESSION"
+$ bw sync --session "$BW_SESSION"
 ```
 
 **Step 2.2: Configure Keycloak Realm**
+
 ```bash
 # Option A: Load credentials from Bitwarden (recommended)
 source load-secrets.sh
 
 # Option B: Set environment variables manually
-export KEYCLOAK_URL="http://localhost:8180"
-export KEYCLOAK_ADMIN="admin"
-export KEYCLOAK_PASSWORD="admin"
+$ export KEYCLOAK_URL="http://localhost:8180"
+$ export KEYCLOAK_ADMIN="admin"
+$ export KEYCLOAK_PASSWORD="admin"
 
 # Run configuration script
-python keycloak-realm-config.py
+$ python keycloak-realm-config.py
 
 # Verify configuration
-python keycloak-realm-config.py --verify
+$ python keycloak-realm-config.py --verify
 ```
 
 **Expected Output:**
