@@ -152,6 +152,7 @@ rules:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  name: platform-admin-sa
   labels:
     app: platform-engineering
     component: rbac
@@ -170,6 +171,7 @@ roleRef:
   name: platform-admin
 subjects:
   - kind: ServiceAccount
+    name: platform-admin-sa
 
 ---
 # ClusterRole: platform-audit-viewer
