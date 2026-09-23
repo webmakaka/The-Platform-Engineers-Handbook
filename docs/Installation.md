@@ -839,6 +839,8 @@ pip3 install pyyaml requests pytest
 | Crossplane     | ≥1.14   | Kubernetes-native infrastructure management      |
 | Crossplane CLI | ≥1.14   | CLI for building and pushing Crossplane packages |
 
+<br/>
+
 #### Crossplane
 
 Extends Kubernetes to manage external infrastructure resources using Custom Resource Definitions (XRDs) and Compositions.
@@ -846,51 +848,34 @@ Extends Kubernetes to manage external infrastructure resources using Custom Reso
 **Install Crossplane to cluster:**
 
 ```bash
-helm repo add crossplane-stable https://charts.crossplane.io/stable
-helm repo update
-helm install crossplane crossplane-stable/crossplane \
+$ helm repo add crossplane-stable https://charts.crossplane.io/stable
+$ helm repo update
+$ helm install crossplane crossplane-stable/crossplane \
   --namespace crossplane-system --create-namespace
 ```
 
-**Install CLI:**
+<br/>
 
-**macOS:**
-
-```bash
-brew install crossplane/tap/crossplane
-```
-
-**Linux (Ubuntu/Debian):**
+#### Install CLI:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh
-sudo mv crossplane /usr/local/bin/
+$ curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh
+$ sudo mv crossplane /usr/local/bin/
 ```
 
-**Windows:**
-
-```powershell
-# Install CLI from GitHub Releases
-```
-
-**Verify installation:**
+<br/>
 
 ```bash
-crossplane --version
+$ crossplane --version
 kubectl get pods -n crossplane-system
 ```
 
-> [!WARNING] > **Common pitfalls to watch out for**
->
-> - Not installing the correct cloud provider (e.g., provider-aws) before applying Compositions causes resources to hang in a pending state.
-> - Crossplane provider credentials stored as plain Kubernetes Secrets without encryption at rest are a security risk.
-> - XRD schema changes after initial deployment require careful migration; breaking changes invalidate existing claims.
-> - Forgetting to apply PatchSets for governance tags means cloud resources are created without cost-allocation or ownership labels.
+<br/>
 
 **Python Dependencies:**
 
 ```bash
-pip3 install flask pyyaml kubernetes
+$ pip install flask pyyaml kubernetes
 # On Linux, add --break-system-packages if installing globally
 ```
 
