@@ -57,6 +57,8 @@ https://www.youtube.com/watch?v=dD_wvvYDNWI
 
 ### Chapter 4: Embedding Observability
 
+https://www.youtube.com/watch?v=bNaqP8LDHAo
+
 - Value of End-to-End Observability
 - Differentiating from monitoring
 - Observability as a business enabler
