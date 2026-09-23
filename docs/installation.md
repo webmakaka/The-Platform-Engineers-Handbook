@@ -976,38 +976,23 @@ OPA Gatekeeper installation is covered in [Chapter 3](#chapter-3-securing-platfo
 
 Utility for testing structured data against Rego policies. Enables shift-left policy validation in development and CI pipelines.
 
-**macOS:**
+```bash
+// $ wget https://github.com/open-policy-agent/conftest/releases/latest/download/conftest_Linux_x86_64.tar.gz
+$ wget https://github.com/open-policy-agent/conftest/releases/download/v0.70.1/conftest_0.70.1_Linux_x86_64.tar.gz
+// $ tar xzf conftest_Linux_x86_64.tar.gz
+$ tar xzf conftest_0.70.1_Linux_x86_64.tar.gz
+$ sudo mv conftest /usr/local/bin/
+```
+
+<br/>
 
 ```bash
-brew install conftest
+$ conftest --version
+Conftest: 0.70.1
+OPA: 1.20.2
 ```
 
-**Linux (Ubuntu/Debian):**
-
-```bash
-wget https://github.com/open-policy-agent/conftest/releases/latest/download/conftest_Linux_x86_64.tar.gz
-tar xzf conftest_Linux_x86_64.tar.gz
-sudo mv conftest /usr/local/bin/
-```
-
-**Windows:**
-
-```powershell
-choco install conftest -y
-# Or download from https://github.com/open-policy-agent/conftest/releases
-```
-
-**Verify installation:**
-
-```bash
-conftest --version
-```
-
-> [!WARNING] > **Common pitfalls to watch out for**
->
-> - Policies in the wrong directory (conftest expects `policy/` by default) cause "0 tests, 0 failures" with no actual validation.
-> - Not using `--strict` mode in CI means warnings pass silently; only failures block the pipeline.
-> - Rego policies that parse YAML incorrectly (e.g., missing `input.metadata`) give false positives on valid manifests.
+<br/>
 
 #### OPA CLI
 
