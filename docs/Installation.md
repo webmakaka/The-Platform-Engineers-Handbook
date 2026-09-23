@@ -858,6 +858,8 @@ $ helm install crossplane crossplane-stable/crossplane \
 
 #### Install CLI:
 
+<br/>
+
 ```bash
 $ curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh
 $ sudo mv crossplane /usr/local/bin/
@@ -866,8 +868,14 @@ $ sudo mv crossplane /usr/local/bin/
 <br/>
 
 ```bash
-$ crossplane --version
-kubectl get pods -n crossplane-system
+$ crossplane version
+Client Version: v2.5.0
+```
+
+<br/>
+
+```
+$ kubectl get pods -n crossplane-system
 ```
 
 <br/>
