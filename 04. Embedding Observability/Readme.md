@@ -88,32 +88,7 @@ This directory contains comprehensive, production-ready examples for implementin
 
 ### Running This Chapter Standalone
 
-> If you are jumping into this chapter without completing earlier chapters, use these commands to set up the infrastructure dependencies. If you already have them running, skip this section.
-
-> **Note:** The observability stack (Prometheus, Grafana, Jaeger) is deployed as part of this chapter. You need a running Kind cluster before starting.
-
-```bash
-# 1. Start Docker Desktop (macOS: open from Applications or Spotlight)
-open -a "Docker"
-# Wait for the Docker engine to start before continuing
-
-# 2. Create a Kind cluster (skip if you already have one)
-kind get clusters                       # Check for existing clusters
-kind create cluster --name platform-dev # Create one if none listed
-kubectl get nodes                       # Verify node(s) are Ready
-
-# Install Prometheus + Grafana
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace --wait
-
-```
-
-### Software Requirements
-- **Python 3.8+** - For running Python scripts
-- **Kubernetes 1.20+** - For DaemonSet deployment (optional)
-- **kubectl** - For Kubernetes operations
-- **Docker/Container Runtime** - For running OTEL Collector in containers
+<br/>
 
 ### External Services
 - **Prometheus 2.30+** - For metrics scraping and storage
@@ -121,32 +96,36 @@ helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack --
 - **Jaeger** - For distributed trace storage and visualization (optional but recommended)
 - **Loki** - For log aggregation (optional)
 
+<br/>
+
 ### Python Dependencies
 
 Install required packages for running Python examples:
 
 ```bash
-# Core OTEL packages
-pip install opentelemetry-api opentelemetry-sdk
+// Core OTEL packages
+$ pip install opentelemetry-api opentelemetry-sdk
 
-# Exporters
-pip install opentelemetry-exporter-otlp
-pip install opentelemetry-exporter-jaeger  # For Jaeger backend
-pip install opentelemetry-exporter-prometheus  # For Prometheus integration
+// Exporters
+$ pip install opentelemetry-exporter-otlp
+$ pip install opentelemetry-exporter-jaeger  # For Jaeger backend
+$ pip install opentelemetry-exporter-prometheus  # For Prometheus integration
 
-# Instrumentation libraries
-pip install opentelemetry-instrumentation-wsgi
-pip install opentelemetry-instrumentation-flask
+// Instrumentation libraries
+$ pip install opentelemetry-instrumentation-wsgi
+$ pip install opentelemetry-instrumentation-flask
 
-# Additional packages
-pip install prometheus-client  # For metrics_pull.py
-pip install flask  # For Flask-based applications
+// Additional packages
+$ pip install prometheus-client  # For metrics_pull.py
+$ pip install flask  # For Flask-based applications
 ```
+
+<br/>
 
 **Optional: Install all at once**
 
 ```bash
-pip install \
+$ pip install \
   opentelemetry-api \
   opentelemetry-sdk \
   opentelemetry-exporter-otlp \
@@ -157,22 +136,26 @@ pip install \
   flask
 ```
 
+<br/>
+
 ### Environment Configuration
 
 Set these environment variables before running applications:
 
 ```bash
-# OTEL Collector endpoint
-export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
+// OTEL Collector endpoint
+$ export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
 
-# Service identification
-export SERVICE_NAME="my-service"
-export SERVICE_VERSION="1.0.0"
+// Service identification
+$ export SERVICE_NAME="my-service"
+$ export SERVICE_VERSION="1.0.0"
 
-# Deployment context
-export DEPLOYMENT_ENV="development"  # or "production"
-export HOSTNAME="worker-1"
+// Deployment context
+$ export DEPLOYMENT_ENV="development"  # or "production"
+$ export HOSTNAME="worker-1"
 ```
+
+<br/>
 
 ---
 
@@ -184,29 +167,36 @@ This section provides detailed instructions for running each component in the re
 
 The observability stack requires Prometheus and Grafana running in-cluster. Deploy them first if not already installed:
 
+<br/>
+
 ```bash
-# Deploy kube-prometheus-stack (Prometheus + Grafana + Alertmanager)
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-helm install monitoring prometheus-community/kube-prometheus-stack \
+// Deploy kube-prometheus-stack (Prometheus + Grafana + Alertmanager)
+$ helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+$ helm repo update
+$ helm install monitoring prometheus-community/kube-prometheus-stack \
   --namespace monitoring --create-namespace
 
-# Wait for pods to be ready (1-2 minutes)
-kubectl get pods -n monitoring
+// Wait for pods to be ready (1-2 minutes)
+$ kubectl get pods -n monitoring
 
-# Port-forward Prometheus and Grafana for local access
-kubectl port-forward -n monitoring svc/prometheus-operated 9090:9090 &
-kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80 &
+// Port-forward Prometheus and Grafana for local access
+$ kubectl port-forward -n monitoring svc/prometheus-operated 9090:9090 &
+$ kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80 &
 
-# Retrieve the Grafana admin password
-kubectl get secret monitoring-grafana -n monitoring -o jsonpath='{.data.admin-password}' | base64 -d; echo
+// Retrieve the Grafana admin password
+$ kubectl get secret monitoring-grafana -n monitoring -o jsonpath='{.data.admin-password}' | base64 -d; echo
 ```
+
+<br/>
 
 Open [http://localhost:3000](http://localhost:3000) and log in with username `admin` and the password from the command above.
 
 > **Note:** If the monitoring stack is already installed (e.g., from Chapter 2 via Flux), the `helm install` command will error with "cannot re-use a name that is still in use" — that's fine, it means the stack is already running. If you've recreated your Kind cluster (e.g., after a Docker restart), you will need to redeploy — see the main [README](../../README.md#surviving-docker--kind-restarts) for details.
 
+<br/>
+
 **Expected Output:**
+
 ```
 NAME                                                     READY   STATUS    RESTARTS   AGE
 alertmanager-monitoring-kube-prometheus-alertmanager-0    2/2     Running   0          2m
@@ -216,6 +206,8 @@ monitoring-kube-state-metrics-xxxxx                       1/1     Running   0   
 prometheus-monitoring-kube-prometheus-prometheus-0         2/2     Running   0          2m
 ```
 
+<br/>
+
 ### Phase 1: Infrastructure Setup (Kubernetes)
 
 If running on Kubernetes, deploy the OTEL Collector first:
@@ -223,40 +215,45 @@ If running on Kubernetes, deploy the OTEL Collector first:
 > **Note:** The deployment uses `otel/opentelemetry-collector-contrib:0.98.0`. The config uses the `debug` exporter (replaces the deprecated `logging` exporter) and `otlp/jaeger` (replaces the removed native `jaeger` exporter — Jaeger now accepts OTLP natively on port 4317).
 
 ```bash
-# Create observability namespace and deploy OTEL Collector
-kubectl apply -f otel-collector-deployment.yaml
+// Create observability namespace and deploy OTEL Collector
+$ kubectl apply -f otel-collector-deployment.yaml
 
-# Wait for DaemonSet to be ready (readiness probe has a 30s initial delay)
-kubectl wait --for=condition=ready pod \
+// Wait for DaemonSet to be ready (readiness probe has a 30s initial delay)
+$ kubectl wait --for=condition=ready pod \
   -l app=otel-collector \
   -n observability \
   --timeout=300s
 
-# Verify deployment
-kubectl get pods -n observability
-kubectl logs -l app=otel-collector -n observability
+// Verify deployment
+$ kubectl get pods -n observability
+$ kubectl logs -l app=otel-collector -n observability
 
-# Port-forward the OTel Collector so locally-run apps can export traces
-# Without this, apps running on your machine cannot reach the collector
-# inside the Kind cluster and you will see "Failed to export traces to
-# localhost:4317, error code: StatusCode.UNAVAILABLE" errors.
-kubectl port-forward -n observability svc/otel-collector 4317:4317 &
+// Port-forward the OTel Collector so locally-run apps can export traces
+// Without this, apps running on your machine cannot reach the collector
+// inside the Kind cluster and you will see "Failed to export traces to
+// localhost:4317, error code: StatusCode.UNAVAILABLE" errors.
+$ kubectl port-forward -n observability svc/otel-collector 4317:4317 &
 ```
 
+<br/>
+
 **Expected Output:**
+
 ```
 NAME                             READY   STATUS    RESTARTS   AGE
 otel-collector-xxxxx             1/1     Running   0          2m
 otel-collector-xxxxx             1/1     Running   0          2m
 ```
 
+<br/>
+
 ### Phase 2: Local Development Setup (Non-Kubernetes)
 
 For local development without Kubernetes:
 
 ```bash
-# 1. Start OTEL Collector in Docker
-docker run -d \
+// 1. Start OTEL Collector in Docker
+$ docker run -d \
   --name otel-collector \
   -v $(pwd)/otel-collector-config.yaml:/etc/otel/config.yaml \
   -p 4317:4317 \
@@ -265,23 +262,28 @@ docker run -d \
   otel/opentelemetry-collector-k8s:0.88.0 \
   --config=/etc/otel/config.yaml
 
-# 2. Verify collector is running
-docker logs otel-collector
-curl http://localhost:13133/  # Health check endpoint
+// 2. Verify collector is running
+$ docker logs otel-collector
+$ curl http://localhost:13133/  # Health check endpoint
 ```
 
+<br/>
+
 **Expected Output:**
+
 ```
 {"status":"Server started"}
 ```
+
+<br/>
 
 ### Phase 3: Validate Observability Stack
 
 Run the test suite to validate configuration:
 
 ```bash
-# Run all tests
-python3 test-observability.py -v
+// Run all tests
+$ python test-observability.py -v
 
 # Expected output:
 # test_collector_config_exists ... ok
@@ -297,20 +299,22 @@ python3 test-observability.py -v
 # OK
 ```
 
+<br/>
+
 ### Phase 4: Run Instrumented Application
 
 Start the example application with OTEL instrumentation:
 
 ```bash
-# Set environment for OTEL Collector
-export OTEL_EXPORTER_OTLP_ENDPOINT="localhost:4317"
-export SERVICE_NAME="example-app"
+// Set environment for OTEL Collector
+$ export OTEL_EXPORTER_OTLP_ENDPOINT="localhost:4317"
+$ export SERVICE_NAME="example-app"
 
-# Install dependencies (if not already installed)
-pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp
+// Install dependencies (if not already installed)
+$ pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp
 
-# Run the application
-python3 instrument-app.py
+// Run the application
+$ python instrument-app.py
 
 # Expected output:
 # 2025-02-21 14:23:45 - platform-app - INFO -
@@ -324,51 +328,60 @@ python3 instrument-app.py
 #  "message": "Server listening on http://0.0.0.0:8000"}
 ```
 
+<br/>
+
 **Test the application (in a new terminal):**
 
 ```bash
-# Health check
-curl http://localhost:8000/health
+// Health check
+$ curl http://localhost:8000/health
 
-# Simulate requests with different latencies
-curl "http://localhost:8000/api/data?delay=0.1"
-curl "http://localhost:8000/api/data?delay=0.5"
+// Simulate requests with different latencies
+$ curl "http://localhost:8000/api/data?delay=0.1"
+$ curl "http://localhost:8000/api/data?delay=0.5"
 
-# View metrics
-curl http://localhost:8000/metrics
+// View metrics
+$ curl http://localhost:8000/metrics
 
-# Trigger an error for trace testing
-curl http://localhost:8000/error
+// Trigger an error for trace testing
+$ curl http://localhost:8000/error
 ```
+
+<br/>
 
 ### Phase 5: Run Metrics Pull Example
 
 In another terminal, run the Flask-based metrics example:
 
 ```bash
-# Install Flask and prometheus_client
-pip install flask prometheus-client
+// Install Flask and prometheus_client
+$ pip install flask prometheus-client
 
-# Run the application
-python3 metrics_pull.py
+// Run the application
+$ python metrics_pull.py
 
-# Expected output:
-# WARNING in app.run - Running on http://0.0.0.0:5000
-# Press CTRL+C to quit
+// Expected output:
+// WARNING in app.run - Running on http://0.0.0.0:5000
+// Press CTRL+C to quit
 ```
+
+<br/>
 
 **Test the metrics endpoint:**
 
 ```bash
-# Generate requests
-curl http://localhost:5000/health
-curl http://localhost:5000/api/items
+// Generate requests
+$ curl http://localhost:5000/health
+$ curl http://localhost:5000/api/items
 
-# View metrics in Prometheus format
-curl http://localhost:5000/metrics
+// View metrics in Prometheus format
+$ curl http://localhost:5000/metrics
 ```
 
+<br/>
+
 **Expected Prometheus metrics output:**
+
 ```
 # HELP http_requests_total Total HTTP requests
 # TYPE http_requests_total counter
@@ -380,6 +393,8 @@ http_request_duration_seconds_bucket{method="GET",endpoint="health",le="0.005"} 
 http_request_duration_seconds_bucket{method="GET",endpoint="health",le="0.01"} 1.0
 ...
 ```
+
+<br/>
 
 ### Phase 6: Run Traces Push Example
 
