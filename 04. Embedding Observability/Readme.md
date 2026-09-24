@@ -1,4 +1,4 @@
-# Chapter 4: Embedding Observability - Code Examples
+# Chapter 4: Embedding Observability
 
 ## Overview
 
@@ -19,14 +19,14 @@ This directory contains comprehensive, production-ready examples for implementin
 ## Architecture Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────────────┐
 │                    Applications (Instrumented with OTEL)         │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌────────────────┐ │
-│  │ instrument-app   │  │ metrics_pull.py  │  │ traces_push.py │ │
-│  │ (WSGI + Traces)  │  │ (Pull Metrics)   │  │ (Push Traces)  │ │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌─────────────────┐ │
+│  │ instrument-app   │  │ metrics_pull.py  │  │ traces_push.py  │ │
+│  │ (WSGI + Traces)  │  │ (Pull Metrics)   │  │ (Push Traces)   │ │
 │  └────────┬─────────┘  └────────┬─────────┘  └────────┬────────┘ │
-│           │                      │                      │          │
-│           └──────────────────────┼──────────────────────┘          │
+│           │                     │                     │          │
+│           └─────────────────────┼─────────────────────┘          │
 └────────────────────────────────────┬─────────────────────────────┘
                                      │ OTLP (gRPC, HTTP)
                                      │ + Prometheus Scrape
@@ -60,23 +60,23 @@ This directory contains comprehensive, production-ready examples for implementin
           ┌─────────┐   ┌─────────┐   ┌──────────┐
           │Prometheus   │ Jaeger  │   │Loki Logs │
           │(Metrics)    │(Traces) │   │          │
-          └─────┬───┘   └────┬────┘   └──────────┘
+          └─────┬───┘   └─────┬───┘   └──────────┘
                 │             │
                 └─────────────┼────────────┐
                               │            │
                               ▼            ▼
         ┌────────────────────────────────────────┐
         │        Grafana (SPOG)                  │
-        │  ┌──────────┐ ┌────────┐ ┌─────────┐ │
-        │  │Developer │ │  SRE   │ │Management│ │
+        │  ┌──────────┐ ┌─────────┐ ┌──────────┐ │
+        │  │Developer │ │  SRE    │ │Management│ │
         │  │Dashboard │ │Dashboard│ │Dashboard │ │
-        │  └──────────┘ └────────┘ └─────────┘ │
-        │  ┌──────────────────────────────────┐ │
-        │  │   Security Dashboard (CVE, Auth) │ │
-        │  └──────────────────────────────────┘ │
-        │  ┌──────────────────────────────────┐ │
-        │  │   Alert Rules (Severity-based)   │ │
-        │  └──────────────────────────────────┘ │
+        │  └──────────┘ └─────────┘ └──────────┘ │
+        │  ┌───────────────────────────────────┐ │
+        │  │   Security Dashboard (CVE, Auth)  │ │
+        │  └───────────────────────────────────┘ │
+        │  ┌───────────────────────────────────┐ │
+        │  │   Alert Rules (Severity-based)    │ │
+        │  └───────────────────────────────────┘ │
         └────────────────────────────────────────┘
 ```
 
@@ -87,6 +87,24 @@ This directory contains comprehensive, production-ready examples for implementin
 ## Prerequisites
 
 ### Running This Chapter Standalone
+
+<br/>
+
+```bash
+$ kind create cluster --name platform-dev --image kindest/node:v1.37.0 --config - <<EOF
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 8080
+      - containerPort: 443
+        hostPort: 8443
+  - role: worker
+  - role: worker
+EOF
+```
 
 <br/>
 
