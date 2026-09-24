@@ -193,10 +193,27 @@ $ helm repo add prometheus-community https://prometheus-community.github.io/helm
 $ helm repo update
 $ helm install monitoring prometheus-community/kube-prometheus-stack \
   --namespace monitoring --create-namespace
+```
 
+<br/>
+
+```shell
 // Wait for pods to be ready (1-2 minutes)
 $ kubectl get pods -n monitoring
+NAME                                                     READY   STATUS    RESTARTS   AGE
+alertmanager-monitoring-kube-prometheus-alertmanager-0   2/2     Running   0          115s
+monitoring-grafana-559b494fb4-gljsg                      3/3     Running   0          2m15s
+monitoring-kube-prometheus-operator-7685c6b5b8-rplht     1/1     Running   0          2m15s
+monitoring-kube-state-metrics-78fd56fc4b-n7v7j           1/1     Running   0          2m15s
+monitoring-prometheus-node-exporter-jr44q                1/1     Running   0          2m15s
+monitoring-prometheus-node-exporter-jsqp4                1/1     Running   0          2m15s
+monitoring-prometheus-node-exporter-n86f5                1/1     Running   0          2m15s
+prometheus-monitoring-kube-prometheus-prometheus-0       2/2     Running   0          114s
+```
 
+<br/>
+
+```shell
 // Port-forward Prometheus and Grafana for local access
 $ kubectl port-forward -n monitoring svc/prometheus-operated 9090:9090 &
 $ kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80 &
@@ -207,22 +224,15 @@ $ kubectl get secret monitoring-grafana -n monitoring -o jsonpath='{.data.admin-
 
 <br/>
 
-Open [http://localhost:3000](http://localhost:3000) and log in with username `admin` and the password from the command above.
-
-> **Note:** If the monitoring stack is already installed (e.g., from Chapter 2 via Flux), the `helm install` command will error with "cannot re-use a name that is still in use" — that's fine, it means the stack is already running. If you've recreated your Kind cluster (e.g., after a Docker restart), you will need to redeploy — see the main [README](../../README.md#surviving-docker--kind-restarts) for details.
+```
+// admin / <YOUR_PASSWORD_FROM_CONSOLE>
+http://localhost:3000
+```
 
 <br/>
 
-**Expected Output:**
+> **Note:** If the monitoring stack is already installed (e.g., from Chapter 2 via Flux), the `helm install` command will error with "cannot re-use a name that is still in use" — that's fine, it means the stack is already running. If you've recreated your Kind cluster (e.g., after a Docker restart), you will need to redeploy — see the main [README](../../README.md#surviving-docker--kind-restarts) for details.
 
-```
-NAME                                                     READY   STATUS    RESTARTS   AGE
-alertmanager-monitoring-kube-prometheus-alertmanager-0    2/2     Running   0          2m
-monitoring-grafana-xxxxx                                 3/3     Running   0          2m
-monitoring-kube-prometheus-operator-xxxxx                 1/1     Running   0          2m
-monitoring-kube-state-metrics-xxxxx                       1/1     Running   0          2m
-prometheus-monitoring-kube-prometheus-prometheus-0         2/2     Running   0          2m
-```
 
 <br/>
 
