@@ -16,6 +16,530 @@ This directory contains comprehensive, production-ready examples for implementin
 
 ---
 
+## Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Applications (Instrumented with OTEL)         │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌────────────────┐ │
+│  │ instrument-app   │  │ metrics_pull.py  │  │ traces_push.py │ │
+│  │ (WSGI + Traces)  │  │ (Pull Metrics)   │  │ (Push Traces)  │ │
+│  └────────┬─────────┘  └────────┬─────────┘  └────────┬────────┘ │
+│           │                      │                      │          │
+│           └──────────────────────┼──────────────────────┘          │
+└────────────────────────────────────┬─────────────────────────────┘
+                                     │ OTLP (gRPC, HTTP)
+                                     │ + Prometheus Scrape
+                                     ▼
+                    ┌──────────────────────────────┐
+                    │ OTEL Collector (DaemonSet)   │
+                    │ ┌────────────────────────┐   │
+                    │ │ Receivers:             │   │
+                    │ │ - OTLP (4317/4318)     │   │
+                    │ │ - Prometheus           │   │
+                    │ │ - Syslog (514)         │   │
+                    │ │ - Jaeger               │   │
+                    │ └────────────────────────┘   │
+                    │ ┌────────────────────────┐   │
+                    │ │ Processors:            │   │
+                    │ │ - Batch, Memory Limit  │   │
+                    │ │ - Attributes, Sampling │   │
+                    │ │ - Resource Detection   │   │
+                    │ └────────────────────────┘   │
+                    │ ┌────────────────────────┐   │
+                    │ │ Exporters:             │   │
+                    │ │ - Prometheus (8889)    │   │
+                    │ │ - Jaeger               │   │
+                    │ │ - Loki                 │   │
+                    │ └────────────────────────┘   │
+                    └──────────────────────────────┘
+                              │
+                ┌─────────────┼─────────────┐
+                │             │             │
+                ▼             ▼             ▼
+          ┌─────────┐   ┌─────────┐   ┌──────────┐
+          │Prometheus   │ Jaeger  │   │Loki Logs │
+          │(Metrics)    │(Traces) │   │          │
+          └─────┬───┘   └────┬────┘   └──────────┘
+                │             │
+                └─────────────┼────────────┐
+                              │            │
+                              ▼            ▼
+        ┌────────────────────────────────────────┐
+        │        Grafana (SPOG)                  │
+        │  ┌──────────┐ ┌────────┐ ┌─────────┐ │
+        │  │Developer │ │  SRE   │ │Management│ │
+        │  │Dashboard │ │Dashboard│ │Dashboard │ │
+        │  └──────────┘ └────────┘ └─────────┘ │
+        │  ┌──────────────────────────────────┐ │
+        │  │   Security Dashboard (CVE, Auth) │ │
+        │  └──────────────────────────────────┘ │
+        │  ┌──────────────────────────────────┐ │
+        │  │   Alert Rules (Severity-based)   │ │
+        │  └──────────────────────────────────┘ │
+        └────────────────────────────────────────┘
+```
+
+---
+
+---
+
+## Prerequisites
+
+### Running This Chapter Standalone
+
+> If you are jumping into this chapter without completing earlier chapters, use these commands to set up the infrastructure dependencies. If you already have them running, skip this section.
+
+> **Note:** The observability stack (Prometheus, Grafana, Jaeger) is deployed as part of this chapter. You need a running Kind cluster before starting.
+
+```bash
+# 1. Start Docker Desktop (macOS: open from Applications or Spotlight)
+open -a "Docker"
+# Wait for the Docker engine to start before continuing
+
+# 2. Create a Kind cluster (skip if you already have one)
+kind get clusters                       # Check for existing clusters
+kind create cluster --name platform-dev # Create one if none listed
+kubectl get nodes                       # Verify node(s) are Ready
+
+# Install Prometheus + Grafana
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace --wait
+
+```
+
+### Software Requirements
+- **Python 3.8+** - For running Python scripts
+- **Kubernetes 1.20+** - For DaemonSet deployment (optional)
+- **kubectl** - For Kubernetes operations
+- **Docker/Container Runtime** - For running OTEL Collector in containers
+
+### External Services
+- **Prometheus 2.30+** - For metrics scraping and storage
+- **Grafana 8.0+** - For dashboard visualization and alerting
+- **Jaeger** - For distributed trace storage and visualization (optional but recommended)
+- **Loki** - For log aggregation (optional)
+
+### Python Dependencies
+
+Install required packages for running Python examples:
+
+```bash
+# Core OTEL packages
+pip install opentelemetry-api opentelemetry-sdk
+
+# Exporters
+pip install opentelemetry-exporter-otlp
+pip install opentelemetry-exporter-jaeger  # For Jaeger backend
+pip install opentelemetry-exporter-prometheus  # For Prometheus integration
+
+# Instrumentation libraries
+pip install opentelemetry-instrumentation-wsgi
+pip install opentelemetry-instrumentation-flask
+
+# Additional packages
+pip install prometheus-client  # For metrics_pull.py
+pip install flask  # For Flask-based applications
+```
+
+**Optional: Install all at once**
+
+```bash
+pip install \
+  opentelemetry-api \
+  opentelemetry-sdk \
+  opentelemetry-exporter-otlp \
+  opentelemetry-exporter-jaeger \
+  opentelemetry-instrumentation-wsgi \
+  opentelemetry-instrumentation-flask \
+  prometheus-client \
+  flask
+```
+
+### Environment Configuration
+
+Set these environment variables before running applications:
+
+```bash
+# OTEL Collector endpoint
+export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
+
+# Service identification
+export SERVICE_NAME="my-service"
+export SERVICE_VERSION="1.0.0"
+
+# Deployment context
+export DEPLOYMENT_ENV="development"  # or "production"
+export HOSTNAME="worker-1"
+```
+
+---
+
+## Step-by-Step Instructions
+
+This section provides detailed instructions for running each component in the recommended order.
+
+### Phase 0: Deploy Monitoring Stack (Prometheus + Grafana)
+
+The observability stack requires Prometheus and Grafana running in-cluster. Deploy them first if not already installed:
+
+```bash
+# Deploy kube-prometheus-stack (Prometheus + Grafana + Alertmanager)
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  --namespace monitoring --create-namespace
+
+# Wait for pods to be ready (1-2 minutes)
+kubectl get pods -n monitoring
+
+# Port-forward Prometheus and Grafana for local access
+kubectl port-forward -n monitoring svc/prometheus-operated 9090:9090 &
+kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80 &
+
+# Retrieve the Grafana admin password
+kubectl get secret monitoring-grafana -n monitoring -o jsonpath='{.data.admin-password}' | base64 -d; echo
+```
+
+Open [http://localhost:3000](http://localhost:3000) and log in with username `admin` and the password from the command above.
+
+> **Note:** If the monitoring stack is already installed (e.g., from Chapter 2 via Flux), the `helm install` command will error with "cannot re-use a name that is still in use" — that's fine, it means the stack is already running. If you've recreated your Kind cluster (e.g., after a Docker restart), you will need to redeploy — see the main [README](../../README.md#surviving-docker--kind-restarts) for details.
+
+**Expected Output:**
+```
+NAME                                                     READY   STATUS    RESTARTS   AGE
+alertmanager-monitoring-kube-prometheus-alertmanager-0    2/2     Running   0          2m
+monitoring-grafana-xxxxx                                 3/3     Running   0          2m
+monitoring-kube-prometheus-operator-xxxxx                 1/1     Running   0          2m
+monitoring-kube-state-metrics-xxxxx                       1/1     Running   0          2m
+prometheus-monitoring-kube-prometheus-prometheus-0         2/2     Running   0          2m
+```
+
+### Phase 1: Infrastructure Setup (Kubernetes)
+
+If running on Kubernetes, deploy the OTEL Collector first:
+
+> **Note:** The deployment uses `otel/opentelemetry-collector-contrib:0.98.0`. The config uses the `debug` exporter (replaces the deprecated `logging` exporter) and `otlp/jaeger` (replaces the removed native `jaeger` exporter — Jaeger now accepts OTLP natively on port 4317).
+
+```bash
+# Create observability namespace and deploy OTEL Collector
+kubectl apply -f otel-collector-deployment.yaml
+
+# Wait for DaemonSet to be ready (readiness probe has a 30s initial delay)
+kubectl wait --for=condition=ready pod \
+  -l app=otel-collector \
+  -n observability \
+  --timeout=300s
+
+# Verify deployment
+kubectl get pods -n observability
+kubectl logs -l app=otel-collector -n observability
+
+# Port-forward the OTel Collector so locally-run apps can export traces
+# Without this, apps running on your machine cannot reach the collector
+# inside the Kind cluster and you will see "Failed to export traces to
+# localhost:4317, error code: StatusCode.UNAVAILABLE" errors.
+kubectl port-forward -n observability svc/otel-collector 4317:4317 &
+```
+
+**Expected Output:**
+```
+NAME                             READY   STATUS    RESTARTS   AGE
+otel-collector-xxxxx             1/1     Running   0          2m
+otel-collector-xxxxx             1/1     Running   0          2m
+```
+
+### Phase 2: Local Development Setup (Non-Kubernetes)
+
+For local development without Kubernetes:
+
+```bash
+# 1. Start OTEL Collector in Docker
+docker run -d \
+  --name otel-collector \
+  -v $(pwd)/otel-collector-config.yaml:/etc/otel/config.yaml \
+  -p 4317:4317 \
+  -p 4318:4318 \
+  -p 8889:8889 \
+  otel/opentelemetry-collector-k8s:0.88.0 \
+  --config=/etc/otel/config.yaml
+
+# 2. Verify collector is running
+docker logs otel-collector
+curl http://localhost:13133/  # Health check endpoint
+```
+
+**Expected Output:**
+```
+{"status":"Server started"}
+```
+
+### Phase 3: Validate Observability Stack
+
+Run the test suite to validate configuration:
+
+```bash
+# Run all tests
+python3 test-observability.py -v
+
+# Expected output:
+# test_collector_config_exists ... ok
+# test_collector_deployment_exists ... ok
+# test_collector_has_all_pipelines ... ok
+# test_dashboard_is_valid_json ... ok
+# test_dashboard_has_panels ... ok
+# test_alert_rules_exist ... ok
+# test_alert_rules_have_severity ... ok
+# test_app_is_valid_python ... ok
+#
+# Ran 8 tests in 0.234s
+# OK
+```
+
+### Phase 4: Run Instrumented Application
+
+Start the example application with OTEL instrumentation:
+
+```bash
+# Set environment for OTEL Collector
+export OTEL_EXPORTER_OTLP_ENDPOINT="localhost:4317"
+export SERVICE_NAME="example-app"
+
+# Install dependencies (if not already installed)
+pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp
+
+# Run the application
+python3 instrument-app.py
+
+# Expected output:
+# 2025-02-21 14:23:45 - platform-app - INFO -
+# {"timestamp": "2025-02-21T14:23:45.123456",
+#  "level": "INFO",
+#  "message": "Starting instrumented application",
+#  "context": {"otel_enabled": true}}
+# 2025-02-21 14:23:45 - platform-app - INFO -
+# {"timestamp": "2025-02-21T14:23:45.234567",
+#  "level": "INFO",
+#  "message": "Server listening on http://0.0.0.0:8000"}
+```
+
+**Test the application (in a new terminal):**
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Simulate requests with different latencies
+curl "http://localhost:8000/api/data?delay=0.1"
+curl "http://localhost:8000/api/data?delay=0.5"
+
+# View metrics
+curl http://localhost:8000/metrics
+
+# Trigger an error for trace testing
+curl http://localhost:8000/error
+```
+
+### Phase 5: Run Metrics Pull Example
+
+In another terminal, run the Flask-based metrics example:
+
+```bash
+# Install Flask and prometheus_client
+pip install flask prometheus-client
+
+# Run the application
+python3 metrics_pull.py
+
+# Expected output:
+# WARNING in app.run - Running on http://0.0.0.0:5000
+# Press CTRL+C to quit
+```
+
+**Test the metrics endpoint:**
+
+```bash
+# Generate requests
+curl http://localhost:5000/health
+curl http://localhost:5000/api/items
+
+# View metrics in Prometheus format
+curl http://localhost:5000/metrics
+```
+
+**Expected Prometheus metrics output:**
+```
+# HELP http_requests_total Total HTTP requests
+# TYPE http_requests_total counter
+http_requests_total{method="GET",endpoint="health",status="200"} 1.0
+
+# HELP http_request_duration_seconds HTTP request duration in seconds
+# TYPE http_request_duration_seconds histogram
+http_request_duration_seconds_bucket{method="GET",endpoint="health",le="0.005"} 1.0
+http_request_duration_seconds_bucket{method="GET",endpoint="health",le="0.01"} 1.0
+...
+```
+
+### Phase 6: Run Traces Push Example
+
+In another terminal, run the trace collection example:
+
+```bash
+# Run the traces example
+python3 traces_push.py
+
+# Expected output:
+# 2025-02-21 14:25:30,123 - root - INFO - Request result:
+# {'success': True, 'result': {'action': 'update', 'status': 'completed', 'duration_ms': 101.23}}
+```
+
+**Check OTEL Collector logs for trace receipt:**
+
+```bash
+# View collector logs (if running in Kubernetes)
+kubectl logs -l app=otel-collector -n observability
+
+# Or for Docker:
+docker logs otel-collector | grep "span"
+```
+
+**Expected output:**
+```
+otel_collector: ResourceSpans#0
+otel_collector: InstrumentationLibrarySpans#0
+otel_collector: Span#0
+  Trace ID: 4bf92f3577b34da6a3ce929d0e0e4736
+  Parent ID:
+  ID: 7a5ece4ef8e9f5f9
+  Name: process_user_request
+  ...
+```
+
+### Phase 7: Generate Persona Dashboards
+
+Create Grafana dashboards for different stakeholders:
+
+```bash
+# Generate all persona dashboards
+python3 observability-personas.py --output-dir ./dashboards
+
+# Expected output:
+# Generated: ./dashboards/dashboard-developer.json
+# Prometheus data source: Developer Dashboard - Application Metrics
+#   - Persona: developer
+#   - Tags: developer, application, debug
+#   - Panels: 6
+#
+# Generated: ./dashboards/dashboard-sre.json
+# Prometheus data source: SRE Dashboard - Platform Health
+#   - Persona: sre
+#   - Tags: sre, infrastructure, reliability
+#   - Panels: 6
+# ...
+
+# Verify generated files
+ls -lh ./dashboards/
+```
+
+**Generate a specific persona dashboard:**
+
+```bash
+# Developer dashboard
+python3 observability-personas.py --persona developer --output-dir ./dashboards
+
+# Or print to stdout
+python3 observability-personas.py --persona security --print | jq '.title'
+# Output: "Security Dashboard - CVE & Compliance"
+```
+
+### Phase 8: Import Dashboards into Grafana
+
+Configure Grafana with the dashboards and alerts:
+
+```bash
+# Open Grafana UI (default: http://localhost:3000)
+# Default credentials: admin / admin
+
+# Via Grafana UI:
+# 1. Navigate to: Dashboards → New → Import
+# 2. Click "Upload JSON file"
+# 3. Select each file from ./dashboards/ directory
+# 4. Choose Prometheus datasource
+# 5. Import
+
+# Via Grafana API (if automation is desired):
+for dashboard in ./dashboards/*.json; do
+  curl -X POST http://localhost:3000/api/dashboards/db \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer YOUR_API_TOKEN" \
+    -d @"$dashboard"
+done
+```
+
+### Phase 9: Configure Alert Rules
+
+Import the alert rules into Prometheus:
+
+```bash
+# Copy alert rules to Prometheus config directory
+cp alert-rules.yaml /etc/prometheus/rules/
+
+# Reload Prometheus configuration
+curl -X POST http://localhost:9090/-/reload
+
+# Or if running in Kubernetes:
+kubectl create configmap prometheus-rules \
+  --from-file=alert-rules.yaml \
+  -n prometheus \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+# Verify rules are loaded
+curl http://localhost:9090/api/v1/rules | jq '.data.groups[0].rules' | head -20
+```
+
+### Phase 10: Generate Load for Testing
+
+Create synthetic traffic to test the full observability stack:
+
+```bash
+# Simple load generation script
+for i in {1..100}; do
+  # Normal request
+  curl -s "http://localhost:8000/api/data?delay=0.1" > /dev/null
+
+  # Occasional slow request
+  if [ $((i % 20)) -eq 0 ]; then
+    curl -s "http://localhost:8000/api/data?delay=0.5" > /dev/null
+  fi
+
+  # Occasional error
+  if [ $((i % 50)) -eq 0 ]; then
+    curl -s "http://localhost:8000/error" > /dev/null
+  fi
+
+  sleep 0.1
+done
+
+echo "Load generation complete"
+```
+
+### Phase 11: View Results in Grafana
+
+Navigate to your dashboards and verify data is flowing:
+
+```
+1. Open Grafana: http://localhost:3000
+2. Go to: Dashboards → Platform Observability Dashboard
+3. Verify panels show:
+   - Request latency (p50, p95, p99)
+   - Error rate trending
+   - Pod health status
+   - Resource utilization graphs
+```
+
+---
+
 ## Code-to-Chapter Mapping
 
 This section maps each code file to specific sections, concepts, and listings in Chapter 4 of "The Platform Engineer's Handbook."
@@ -517,460 +1041,6 @@ Pre-computed metrics for faster dashboard queries:
 
 ---
 
-## Prerequisites
-
-### Running This Chapter Standalone
-
-> If you are jumping into this chapter without completing earlier chapters, use these commands to set up the infrastructure dependencies. If you already have them running, skip this section.
-
-> **Note:** The observability stack (Prometheus, Grafana, Jaeger) is deployed as part of this chapter. You need a running Kind cluster before starting.
-
-```bash
-# 1. Start Docker Desktop (macOS: open from Applications or Spotlight)
-open -a "Docker"
-# Wait for the Docker engine to start before continuing
-
-# 2. Create a Kind cluster (skip if you already have one)
-kind get clusters                       # Check for existing clusters
-kind create cluster --name platform-dev # Create one if none listed
-kubectl get nodes                       # Verify node(s) are Ready
-
-# Install Prometheus + Grafana
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace --wait
-
-```
-
-### Software Requirements
-- **Python 3.8+** - For running Python scripts
-- **Kubernetes 1.20+** - For DaemonSet deployment (optional)
-- **kubectl** - For Kubernetes operations
-- **Docker/Container Runtime** - For running OTEL Collector in containers
-
-### External Services
-- **Prometheus 2.30+** - For metrics scraping and storage
-- **Grafana 8.0+** - For dashboard visualization and alerting
-- **Jaeger** - For distributed trace storage and visualization (optional but recommended)
-- **Loki** - For log aggregation (optional)
-
-### Python Dependencies
-
-Install required packages for running Python examples:
-
-```bash
-# Core OTEL packages
-pip install opentelemetry-api opentelemetry-sdk
-
-# Exporters
-pip install opentelemetry-exporter-otlp
-pip install opentelemetry-exporter-jaeger  # For Jaeger backend
-pip install opentelemetry-exporter-prometheus  # For Prometheus integration
-
-# Instrumentation libraries
-pip install opentelemetry-instrumentation-wsgi
-pip install opentelemetry-instrumentation-flask
-
-# Additional packages
-pip install prometheus-client  # For metrics_pull.py
-pip install flask  # For Flask-based applications
-```
-
-**Optional: Install all at once**
-
-```bash
-pip install \
-  opentelemetry-api \
-  opentelemetry-sdk \
-  opentelemetry-exporter-otlp \
-  opentelemetry-exporter-jaeger \
-  opentelemetry-instrumentation-wsgi \
-  opentelemetry-instrumentation-flask \
-  prometheus-client \
-  flask
-```
-
-### Environment Configuration
-
-Set these environment variables before running applications:
-
-```bash
-# OTEL Collector endpoint
-export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
-
-# Service identification
-export SERVICE_NAME="my-service"
-export SERVICE_VERSION="1.0.0"
-
-# Deployment context
-export DEPLOYMENT_ENV="development"  # or "production"
-export HOSTNAME="worker-1"
-```
-
----
-
-## Step-by-Step Instructions
-
-This section provides detailed instructions for running each component in the recommended order.
-
-### Phase 0: Deploy Monitoring Stack (Prometheus + Grafana)
-
-The observability stack requires Prometheus and Grafana running in-cluster. Deploy them first if not already installed:
-
-```bash
-# Deploy kube-prometheus-stack (Prometheus + Grafana + Alertmanager)
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-helm install monitoring prometheus-community/kube-prometheus-stack \
-  --namespace monitoring --create-namespace
-
-# Wait for pods to be ready (1-2 minutes)
-kubectl get pods -n monitoring
-
-# Port-forward Prometheus and Grafana for local access
-kubectl port-forward -n monitoring svc/prometheus-operated 9090:9090 &
-kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80 &
-
-# Retrieve the Grafana admin password
-kubectl get secret monitoring-grafana -n monitoring -o jsonpath='{.data.admin-password}' | base64 -d; echo
-```
-
-Open [http://localhost:3000](http://localhost:3000) and log in with username `admin` and the password from the command above.
-
-> **Note:** If the monitoring stack is already installed (e.g., from Chapter 2 via Flux), the `helm install` command will error with "cannot re-use a name that is still in use" — that's fine, it means the stack is already running. If you've recreated your Kind cluster (e.g., after a Docker restart), you will need to redeploy — see the main [README](../../README.md#surviving-docker--kind-restarts) for details.
-
-**Expected Output:**
-```
-NAME                                                     READY   STATUS    RESTARTS   AGE
-alertmanager-monitoring-kube-prometheus-alertmanager-0    2/2     Running   0          2m
-monitoring-grafana-xxxxx                                 3/3     Running   0          2m
-monitoring-kube-prometheus-operator-xxxxx                 1/1     Running   0          2m
-monitoring-kube-state-metrics-xxxxx                       1/1     Running   0          2m
-prometheus-monitoring-kube-prometheus-prometheus-0         2/2     Running   0          2m
-```
-
-### Phase 1: Infrastructure Setup (Kubernetes)
-
-If running on Kubernetes, deploy the OTEL Collector first:
-
-> **Note:** The deployment uses `otel/opentelemetry-collector-contrib:0.98.0`. The config uses the `debug` exporter (replaces the deprecated `logging` exporter) and `otlp/jaeger` (replaces the removed native `jaeger` exporter — Jaeger now accepts OTLP natively on port 4317).
-
-```bash
-# Create observability namespace and deploy OTEL Collector
-kubectl apply -f otel-collector-deployment.yaml
-
-# Wait for DaemonSet to be ready (readiness probe has a 30s initial delay)
-kubectl wait --for=condition=ready pod \
-  -l app=otel-collector \
-  -n observability \
-  --timeout=300s
-
-# Verify deployment
-kubectl get pods -n observability
-kubectl logs -l app=otel-collector -n observability
-
-# Port-forward the OTel Collector so locally-run apps can export traces
-# Without this, apps running on your machine cannot reach the collector
-# inside the Kind cluster and you will see "Failed to export traces to
-# localhost:4317, error code: StatusCode.UNAVAILABLE" errors.
-kubectl port-forward -n observability svc/otel-collector 4317:4317 &
-```
-
-**Expected Output:**
-```
-NAME                             READY   STATUS    RESTARTS   AGE
-otel-collector-xxxxx             1/1     Running   0          2m
-otel-collector-xxxxx             1/1     Running   0          2m
-```
-
-### Phase 2: Local Development Setup (Non-Kubernetes)
-
-For local development without Kubernetes:
-
-```bash
-# 1. Start OTEL Collector in Docker
-docker run -d \
-  --name otel-collector \
-  -v $(pwd)/otel-collector-config.yaml:/etc/otel/config.yaml \
-  -p 4317:4317 \
-  -p 4318:4318 \
-  -p 8889:8889 \
-  otel/opentelemetry-collector-k8s:0.88.0 \
-  --config=/etc/otel/config.yaml
-
-# 2. Verify collector is running
-docker logs otel-collector
-curl http://localhost:13133/  # Health check endpoint
-```
-
-**Expected Output:**
-```
-{"status":"Server started"}
-```
-
-### Phase 3: Validate Observability Stack
-
-Run the test suite to validate configuration:
-
-```bash
-# Run all tests
-python3 test-observability.py -v
-
-# Expected output:
-# test_collector_config_exists ... ok
-# test_collector_deployment_exists ... ok
-# test_collector_has_all_pipelines ... ok
-# test_dashboard_is_valid_json ... ok
-# test_dashboard_has_panels ... ok
-# test_alert_rules_exist ... ok
-# test_alert_rules_have_severity ... ok
-# test_app_is_valid_python ... ok
-#
-# Ran 8 tests in 0.234s
-# OK
-```
-
-### Phase 4: Run Instrumented Application
-
-Start the example application with OTEL instrumentation:
-
-```bash
-# Set environment for OTEL Collector
-export OTEL_EXPORTER_OTLP_ENDPOINT="localhost:4317"
-export SERVICE_NAME="example-app"
-
-# Install dependencies (if not already installed)
-pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp
-
-# Run the application
-python3 instrument-app.py
-
-# Expected output:
-# 2025-02-21 14:23:45 - platform-app - INFO -
-# {"timestamp": "2025-02-21T14:23:45.123456",
-#  "level": "INFO",
-#  "message": "Starting instrumented application",
-#  "context": {"otel_enabled": true}}
-# 2025-02-21 14:23:45 - platform-app - INFO -
-# {"timestamp": "2025-02-21T14:23:45.234567",
-#  "level": "INFO",
-#  "message": "Server listening on http://0.0.0.0:8000"}
-```
-
-**Test the application (in a new terminal):**
-
-```bash
-# Health check
-curl http://localhost:8000/health
-
-# Simulate requests with different latencies
-curl "http://localhost:8000/api/data?delay=0.1"
-curl "http://localhost:8000/api/data?delay=0.5"
-
-# View metrics
-curl http://localhost:8000/metrics
-
-# Trigger an error for trace testing
-curl http://localhost:8000/error
-```
-
-### Phase 5: Run Metrics Pull Example
-
-In another terminal, run the Flask-based metrics example:
-
-```bash
-# Install Flask and prometheus_client
-pip install flask prometheus-client
-
-# Run the application
-python3 metrics_pull.py
-
-# Expected output:
-# WARNING in app.run - Running on http://0.0.0.0:5000
-# Press CTRL+C to quit
-```
-
-**Test the metrics endpoint:**
-
-```bash
-# Generate requests
-curl http://localhost:5000/health
-curl http://localhost:5000/api/items
-
-# View metrics in Prometheus format
-curl http://localhost:5000/metrics
-```
-
-**Expected Prometheus metrics output:**
-```
-# HELP http_requests_total Total HTTP requests
-# TYPE http_requests_total counter
-http_requests_total{method="GET",endpoint="health",status="200"} 1.0
-
-# HELP http_request_duration_seconds HTTP request duration in seconds
-# TYPE http_request_duration_seconds histogram
-http_request_duration_seconds_bucket{method="GET",endpoint="health",le="0.005"} 1.0
-http_request_duration_seconds_bucket{method="GET",endpoint="health",le="0.01"} 1.0
-...
-```
-
-### Phase 6: Run Traces Push Example
-
-In another terminal, run the trace collection example:
-
-```bash
-# Run the traces example
-python3 traces_push.py
-
-# Expected output:
-# 2025-02-21 14:25:30,123 - root - INFO - Request result:
-# {'success': True, 'result': {'action': 'update', 'status': 'completed', 'duration_ms': 101.23}}
-```
-
-**Check OTEL Collector logs for trace receipt:**
-
-```bash
-# View collector logs (if running in Kubernetes)
-kubectl logs -l app=otel-collector -n observability
-
-# Or for Docker:
-docker logs otel-collector | grep "span"
-```
-
-**Expected output:**
-```
-otel_collector: ResourceSpans#0
-otel_collector: InstrumentationLibrarySpans#0
-otel_collector: Span#0
-  Trace ID: 4bf92f3577b34da6a3ce929d0e0e4736
-  Parent ID:
-  ID: 7a5ece4ef8e9f5f9
-  Name: process_user_request
-  ...
-```
-
-### Phase 7: Generate Persona Dashboards
-
-Create Grafana dashboards for different stakeholders:
-
-```bash
-# Generate all persona dashboards
-python3 observability-personas.py --output-dir ./dashboards
-
-# Expected output:
-# Generated: ./dashboards/dashboard-developer.json
-# Prometheus data source: Developer Dashboard - Application Metrics
-#   - Persona: developer
-#   - Tags: developer, application, debug
-#   - Panels: 6
-#
-# Generated: ./dashboards/dashboard-sre.json
-# Prometheus data source: SRE Dashboard - Platform Health
-#   - Persona: sre
-#   - Tags: sre, infrastructure, reliability
-#   - Panels: 6
-# ...
-
-# Verify generated files
-ls -lh ./dashboards/
-```
-
-**Generate a specific persona dashboard:**
-
-```bash
-# Developer dashboard
-python3 observability-personas.py --persona developer --output-dir ./dashboards
-
-# Or print to stdout
-python3 observability-personas.py --persona security --print | jq '.title'
-# Output: "Security Dashboard - CVE & Compliance"
-```
-
-### Phase 8: Import Dashboards into Grafana
-
-Configure Grafana with the dashboards and alerts:
-
-```bash
-# Open Grafana UI (default: http://localhost:3000)
-# Default credentials: admin / admin
-
-# Via Grafana UI:
-# 1. Navigate to: Dashboards → New → Import
-# 2. Click "Upload JSON file"
-# 3. Select each file from ./dashboards/ directory
-# 4. Choose Prometheus datasource
-# 5. Import
-
-# Via Grafana API (if automation is desired):
-for dashboard in ./dashboards/*.json; do
-  curl -X POST http://localhost:3000/api/dashboards/db \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer YOUR_API_TOKEN" \
-    -d @"$dashboard"
-done
-```
-
-### Phase 9: Configure Alert Rules
-
-Import the alert rules into Prometheus:
-
-```bash
-# Copy alert rules to Prometheus config directory
-cp alert-rules.yaml /etc/prometheus/rules/
-
-# Reload Prometheus configuration
-curl -X POST http://localhost:9090/-/reload
-
-# Or if running in Kubernetes:
-kubectl create configmap prometheus-rules \
-  --from-file=alert-rules.yaml \
-  -n prometheus \
-  --dry-run=client -o yaml | kubectl apply -f -
-
-# Verify rules are loaded
-curl http://localhost:9090/api/v1/rules | jq '.data.groups[0].rules' | head -20
-```
-
-### Phase 10: Generate Load for Testing
-
-Create synthetic traffic to test the full observability stack:
-
-```bash
-# Simple load generation script
-for i in {1..100}; do
-  # Normal request
-  curl -s "http://localhost:8000/api/data?delay=0.1" > /dev/null
-
-  # Occasional slow request
-  if [ $((i % 20)) -eq 0 ]; then
-    curl -s "http://localhost:8000/api/data?delay=0.5" > /dev/null
-  fi
-
-  # Occasional error
-  if [ $((i % 50)) -eq 0 ]; then
-    curl -s "http://localhost:8000/error" > /dev/null
-  fi
-
-  sleep 0.1
-done
-
-echo "Load generation complete"
-```
-
-### Phase 11: View Results in Grafana
-
-Navigate to your dashboards and verify data is flowing:
-
-```
-1. Open Grafana: http://localhost:3000
-2. Go to: Dashboards → Platform Observability Dashboard
-3. Verify panels show:
-   - Request latency (p50, p95, p99)
-   - Error rate trending
-   - Pod health status
-   - Resource utilization graphs
-```
-
 **Debugging Tips:**
 
 If dashboards are empty:
@@ -1081,71 +1151,6 @@ grep -o '"expr":"[^"]*' ./dashboards/dashboard-*.json
 7. Review `alert-rules.yaml` for incident detection
 8. Implement observability-driven deployment practices
 
----
-
-## Architecture Diagram
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Applications (Instrumented with OTEL)         │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌────────────────┐ │
-│  │ instrument-app   │  │ metrics_pull.py  │  │ traces_push.py │ │
-│  │ (WSGI + Traces)  │  │ (Pull Metrics)   │  │ (Push Traces)  │ │
-│  └────────┬─────────┘  └────────┬─────────┘  └────────┬────────┘ │
-│           │                      │                      │          │
-│           └──────────────────────┼──────────────────────┘          │
-└────────────────────────────────────┬─────────────────────────────┘
-                                     │ OTLP (gRPC, HTTP)
-                                     │ + Prometheus Scrape
-                                     ▼
-                    ┌──────────────────────────────┐
-                    │ OTEL Collector (DaemonSet)   │
-                    │ ┌────────────────────────┐   │
-                    │ │ Receivers:             │   │
-                    │ │ - OTLP (4317/4318)     │   │
-                    │ │ - Prometheus           │   │
-                    │ │ - Syslog (514)         │   │
-                    │ │ - Jaeger               │   │
-                    │ └────────────────────────┘   │
-                    │ ┌────────────────────────┐   │
-                    │ │ Processors:            │   │
-                    │ │ - Batch, Memory Limit  │   │
-                    │ │ - Attributes, Sampling │   │
-                    │ │ - Resource Detection   │   │
-                    │ └────────────────────────┘   │
-                    │ ┌────────────────────────┐   │
-                    │ │ Exporters:             │   │
-                    │ │ - Prometheus (8889)    │   │
-                    │ │ - Jaeger               │   │
-                    │ │ - Loki                 │   │
-                    │ └────────────────────────┘   │
-                    └──────────────────────────────┘
-                              │
-                ┌─────────────┼─────────────┐
-                │             │             │
-                ▼             ▼             ▼
-          ┌─────────┐   ┌─────────┐   ┌──────────┐
-          │Prometheus   │ Jaeger  │   │Loki Logs │
-          │(Metrics)    │(Traces) │   │          │
-          └─────┬───┘   └────┬────┘   └──────────┘
-                │             │
-                └─────────────┼────────────┐
-                              │            │
-                              ▼            ▼
-        ┌────────────────────────────────────────┐
-        │        Grafana (SPOG)                  │
-        │  ┌──────────┐ ┌────────┐ ┌─────────┐ │
-        │  │Developer │ │  SRE   │ │Management│ │
-        │  │Dashboard │ │Dashboard│ │Dashboard │ │
-        │  └──────────┘ └────────┘ └─────────┘ │
-        │  ┌──────────────────────────────────┐ │
-        │  │   Security Dashboard (CVE, Auth) │ │
-        │  └──────────────────────────────────┘ │
-        │  ┌──────────────────────────────────┐ │
-        │  │   Alert Rules (Severity-based)   │ │
-        │  └──────────────────────────────────┘ │
-        └────────────────────────────────────────┘
-```
 
 ---
 
@@ -1163,40 +1168,3 @@ grep -o '"expr":"[^"]*' ./dashboards/dashboard-*.json
 | `otel-collector-deployment.yaml` | YAML | Kubernetes DaemonSet deployment | Infrastructure |
 | `alert-rules.yaml` | YAML | Prometheus alert rules | Incident Response |
 | `grafana-dashboard-platform.json` | JSON | Sample Grafana dashboard | SPOG Visualization |
-
----
-
-## Next Steps
-
-After working through this chapter's examples:
-
-1. **Implement Observability in Your Services**: Use the OTEL SDK setup from `otel_setup.py` as a template
-2. **Deploy OTEL Collectors**: Follow the Kubernetes deployment in your cluster
-3. **Create Custom Dashboards**: Extend `observability-personas.py` for your specific services
-4. **Establish Alert Runbooks**: Link `alert-rules.yaml` to runbooks for your team
-5. **Measure MTTR**: Track Mean Time To Recovery improvements from better observability
-6. **Practice Observability-Driven Deployment**: Use observability gates in your CI/CD pipeline
-
----
-
-## References
-
-- **OpenTelemetry**: https://opentelemetry.io/
-- **OTEL Python SDK**: https://opentelemetry.io/docs/instrumentation/python/
-- **Prometheus**: https://prometheus.io/
-- **Grafana**: https://grafana.com/
-- **Jaeger**: https://www.jaegertracing.io/
-- **Kubernetes**: https://kubernetes.io/
-- **The Platform Engineer's Handbook**: https://peh-packt.platformetrics.com/
-
----
-
-## Summary
-
-This chapter equips platform engineers with the knowledge and tools to embed observability into their organizations' microservices architectures. Through standardized OpenTelemetry instrumentation, unified SPOG dashboards, and observability-driven deployment practices, teams can dramatically reduce MTTR, enable developer self-service, and make data-driven operational decisions. The code examples in this directory provide production-ready templates for implementing these patterns in your organization.
-
----
-
-**Author:** Ajay Chankramath (ajay@platformetrics.com)
-**Book:** The Platform Engineer's Handbook (Packt Publishing)
-**Last Updated**: November 2025
