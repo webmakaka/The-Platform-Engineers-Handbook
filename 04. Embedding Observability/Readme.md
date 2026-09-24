@@ -401,8 +401,8 @@ http_request_duration_seconds_bucket{method="GET",endpoint="health",le="0.01"} 1
 In another terminal, run the trace collection example:
 
 ```bash
-# Run the traces example
-python3 traces_push.py
+// Run the traces example
+$ python traces_push.py
 
 # Expected output:
 # 2025-02-21 14:25:30,123 - root - INFO - Request result:
@@ -431,13 +431,15 @@ otel_collector: Span#0
   ...
 ```
 
+<br/>
+
 ### Phase 7: Generate Persona Dashboards
 
 Create Grafana dashboards for different stakeholders:
 
 ```bash
-# Generate all persona dashboards
-python3 observability-personas.py --output-dir ./dashboards
+// Generate all persona dashboards
+$ python observability-personas.py --output-dir ./dashboards
 
 # Expected output:
 # Generated: ./dashboards/dashboard-developer.json
@@ -454,27 +456,31 @@ python3 observability-personas.py --output-dir ./dashboards
 # ...
 
 # Verify generated files
-ls -lh ./dashboards/
+$ ls -lh ./dashboards/
 ```
+
+<br/>
 
 **Generate a specific persona dashboard:**
 
 ```bash
-# Developer dashboard
-python3 observability-personas.py --persona developer --output-dir ./dashboards
+// Developer dashboard
+$ python observability-personas.py --persona developer --output-dir ./dashboards
 
 # Or print to stdout
-python3 observability-personas.py --persona security --print | jq '.title'
+$ python observability-personas.py --persona security --print | jq '.title'
 # Output: "Security Dashboard - CVE & Compliance"
 ```
+
+<br/>
 
 ### Phase 8: Import Dashboards into Grafana
 
 Configure Grafana with the dashboards and alerts:
 
 ```bash
-# Open Grafana UI (default: http://localhost:3000)
-# Default credentials: admin / admin
+// Open Grafana UI (default: http://localhost:3000)
+// Default credentials: admin / admin
 
 # Via Grafana UI:
 # 1. Navigate to: Dashboards → New → Import
@@ -483,8 +489,8 @@ Configure Grafana with the dashboards and alerts:
 # 4. Choose Prometheus datasource
 # 5. Import
 
-# Via Grafana API (if automation is desired):
-for dashboard in ./dashboards/*.json; do
+// Via Grafana API (if automation is desired):
+$ for dashboard in ./dashboards/*.json; do
   curl -X POST http://localhost:3000/api/dashboards/db \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer YOUR_API_TOKEN" \
@@ -497,29 +503,31 @@ done
 Import the alert rules into Prometheus:
 
 ```bash
-# Copy alert rules to Prometheus config directory
-cp alert-rules.yaml /etc/prometheus/rules/
+// Copy alert rules to Prometheus config directory
+$ cp alert-rules.yaml /etc/prometheus/rules/
 
-# Reload Prometheus configuration
-curl -X POST http://localhost:9090/-/reload
+// Reload Prometheus configuration
+$ curl -X POST http://localhost:9090/-/reload
 
-# Or if running in Kubernetes:
-kubectl create configmap prometheus-rules \
+// Or if running in Kubernetes:
+$ kubectl create configmap prometheus-rules \
   --from-file=alert-rules.yaml \
   -n prometheus \
   --dry-run=client -o yaml | kubectl apply -f -
 
-# Verify rules are loaded
-curl http://localhost:9090/api/v1/rules | jq '.data.groups[0].rules' | head -20
+// Verify rules are loaded
+$ curl http://localhost:9090/api/v1/rules | jq '.data.groups[0].rules' | head -20
 ```
+
+<br/>
 
 ### Phase 10: Generate Load for Testing
 
 Create synthetic traffic to test the full observability stack:
 
 ```bash
-# Simple load generation script
-for i in {1..100}; do
+// Simple load generation script
+$ for i in {1..100}; do
   # Normal request
   curl -s "http://localhost:8000/api/data?delay=0.1" > /dev/null
 
@@ -536,8 +544,10 @@ for i in {1..100}; do
   sleep 0.1
 done
 
-echo "Load generation complete"
+$ echo "Load generation complete"
 ```
+
+<br/>
 
 ### Phase 11: View Results in Grafana
 
