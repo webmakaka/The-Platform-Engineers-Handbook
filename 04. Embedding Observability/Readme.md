@@ -245,32 +245,39 @@ If running on Kubernetes, deploy the OTEL Collector first:
 ```bash
 // Create observability namespace and deploy OTEL Collector
 $ kubectl apply -f otel-collector-deployment.yaml
+```
 
+<br/>
+
+```shell
 // Wait for DaemonSet to be ready (readiness probe has a 30s initial delay)
 $ kubectl wait --for=condition=ready pod \
   -l app=otel-collector \
   -n observability \
   --timeout=300s
+```
 
+<br/>
+
+```shell
 // Verify deployment
 $ kubectl get pods -n observability
-$ kubectl logs -l app=otel-collector -n observability
+NAME                   READY   STATUS    RESTARTS   AGE
+otel-collector-frpn9   1/1     Running   0          64s
+otel-collector-rrpxg   1/1     Running   0          64s
+otel-collector-vltcg   1/1     Running   0          64s
 
+$ kubectl logs -l app=otel-collector -n observability
+```
+
+<br/>
+
+```shell
 // Port-forward the OTel Collector so locally-run apps can export traces
 // Without this, apps running on your machine cannot reach the collector
 // inside the Kind cluster and you will see "Failed to export traces to
 // localhost:4317, error code: StatusCode.UNAVAILABLE" errors.
 $ kubectl port-forward -n observability svc/otel-collector 4317:4317 &
-```
-
-<br/>
-
-**Expected Output:**
-
-```
-NAME                             READY   STATUS    RESTARTS   AGE
-otel-collector-xxxxx             1/1     Running   0          2m
-otel-collector-xxxxx             1/1     Running   0          2m
 ```
 
 <br/>
@@ -312,19 +319,29 @@ Run the test suite to validate configuration:
 ```bash
 // Run all tests
 $ python test-observability.py -v
+============================================================
+Chapter 4: Observability Stack Tests
+============================================================
+test_alert_rules_exist (__main__.TestAlertRules) ... ok
+test_alert_rules_have_severity (__main__.TestAlertRules) ... /home/marley/tmp/The-Platform-Engineers-Handbook/04. Embedding Observability/test-observability.py:59: ResourceWarning: unclosed file <_io.TextIOWrapper name='/home/marley/tmp/The-Platform-Engineers-Handbook/04. Embedding Observability/alert-rules.yaml' mode='r' encoding='UTF-8'>
+  content = open(os.path.join(os.path.dirname(__file__), "alert-rules.yaml")).read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_dashboard_has_panels (__main__.TestGrafanaDashboard) ... ok
+test_dashboard_is_valid_json (__main__.TestGrafanaDashboard) ... ok
+test_app_is_valid_python (__main__.TestInstrumentedApp) ... ok
+test_collector_config_exists (__main__.TestOTELCollector) ... ok
+test_collector_deployment_exists (__main__.TestOTELCollector) ... ok
+test_collector_has_all_pipelines (__main__.TestOTELCollector)
+OTEL config should have metrics, traces, and logs pipelines. ... /home/marley/tmp/The-Platform-Engineers-Handbook/04. Embedding Observability/test-observability.py:30: ResourceWarning: unclosed file <_io.TextIOWrapper name='/home/marley/tmp/The-Platform-Engineers-Handbook/04. Embedding Observability/otel-collector-config.yaml' mode='r' encoding='UTF-8'>
+  content = open(os.path.join(self.code_dir, "otel-collector-config.yaml")).read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
 
-# Expected output:
-# test_collector_config_exists ... ok
-# test_collector_deployment_exists ... ok
-# test_collector_has_all_pipelines ... ok
-# test_dashboard_is_valid_json ... ok
-# test_dashboard_has_panels ... ok
-# test_alert_rules_exist ... ok
-# test_alert_rules_have_severity ... ok
-# test_app_is_valid_python ... ok
-#
-# Ran 8 tests in 0.234s
-# OK
+----------------------------------------------------------------------
+Ran 8 tests in 0.008s
+
+OK
 ```
 
 <br/>
@@ -440,11 +457,11 @@ $ python traces_push.py
 **Check OTEL Collector logs for trace receipt:**
 
 ```bash
-# View collector logs (if running in Kubernetes)
-kubectl logs -l app=otel-collector -n observability
+// View collector logs (if running in Kubernetes)
+$ kubectl logs -l app=otel-collector -n observability
 
-# Or for Docker:
-docker logs otel-collector | grep "span"
+// Or for Docker:
+$ docker logs otel-collector | grep "span"
 ```
 
 **Expected output:**
@@ -482,8 +499,12 @@ $ python observability-personas.py --output-dir ./dashboards
 #   - Tags: sre, infrastructure, reliability
 #   - Panels: 6
 # ...
+```
 
-# Verify generated files
+<br/>
+
+```
+// Verify generated files
 $ ls -lh ./dashboards/
 ```
 
@@ -525,6 +546,8 @@ $ for dashboard in ./dashboards/*.json; do
     -d @"$dashboard"
 done
 ```
+
+<br/>
 
 ### Phase 9: Configure Alert Rules
 
