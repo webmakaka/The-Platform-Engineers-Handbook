@@ -37,7 +37,7 @@ This chapter teaches you how to configure production-ready Kubernetes platform c
 │  │  └─ mTLS & Authorization Policies              │ │
 │  └────────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────────┐ │
-│  │  Platform Services                              │ │
+│  │  Platform Services                             │ │
 │  │  ├─ cert-manager (TLS/SSL certificates)        │ │
 │  │  ├─ Prometheus & Grafana (monitoring)          │ │
 │  │  ├─ Alertmanager (alerting)                    │ │
@@ -45,7 +45,7 @@ This chapter teaches you how to configure production-ready Kubernetes platform c
 │  │  └─ Network Policies (zero-trust)              │ │
 │  └────────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────────┐ │
-│  │  Application Namespace                          │ │
+│  │  Application Namespace                         │ │
 │  │  ├─ User workloads (Istio-injected)            │ │
 │  │  ├─ Resource quotas enforced                   │ │
 │  │  └─ Network policies enabled                   │ │
@@ -102,8 +102,9 @@ $ cat modules/cluster.py
 
 <br/>
 
-```
+```shell
 $ docker pull ghcr.io/fluxcd/notification-controller:v1.9.4
+$ kind --name platform-dev load docker-image ghcr.io/fluxcd/notification-controller:v1.9.4
 ```
 
 <br/>
