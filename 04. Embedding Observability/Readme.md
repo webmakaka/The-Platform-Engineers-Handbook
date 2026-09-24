@@ -614,6 +614,16 @@ Navigate to your dashboards and verify data is flowing:
    - Resource utilization graphs
 ```
 
+<br/>
+
+### Cleanup
+
+```
+$ kind delete cluster --name platform-dev
+```
+
+<br/>
+
 ---
 
 ## Code-to-Chapter Mapping
