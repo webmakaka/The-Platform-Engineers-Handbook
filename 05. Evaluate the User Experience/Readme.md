@@ -44,17 +44,20 @@ kubectl get nodes                       # Verify node(s) are Ready
 - **git**: 2.30+ (for repository analysis with KPI collector)
 
 ### Python Dependencies
+
 Install all Python dependencies:
+
 ```bash
-pip install -r requirements.txt  # If provided
+$ pip install -r requirements.txt  # If provided
 # Or install individually:
-pip install flask pyyaml winston  # For demo app and friction analyzer
+$ pip install flask pyyaml winston  # For demo app and friction analyzer
 ```
 
 ### Node.js Dependencies
 For the Express app with OpenTelemetry instrumentation:
+
 ```bash
-npm install express @opentelemetry/sdk-node \
+$ npm install express @opentelemetry/sdk-node \
   @opentelemetry/auto-instrumentations-node \
   @opentelemetry/exporter-trace-otlp-grpc \
   @opentelemetry/exporter-metrics-otlp-grpc \
@@ -92,14 +95,14 @@ kubectl apply -f https://raw.githubusercontent.com/open-telemetry/opentelemetry-
 
 **Commands**:
 ```bash
-# Examine the Flask app
-cat demo-app/app.py
+// Examine the Flask app
+$ cat demo-app/app.py
 
-# Review the Dockerfile
-cat demo-app/Dockerfile
+// Review the Dockerfile
+$ cat demo-app/Dockerfile
 
-# Check Kubernetes manifests
-cat demo-app/k8s-manifests.yaml
+// Check Kubernetes manifests
+$ cat demo-app/k8s-manifests.yaml
 ```
 
 **Expected Output**: Understanding of CRUD API endpoints, containerization approach, and K8s deployment strategy
@@ -113,12 +116,13 @@ cat demo-app/k8s-manifests.yaml
 **Objective**: Verify the app works outside containers
 
 **Command Option A - Direct Python**:
-```bash
-# Install Flask
-pip install flask
 
-# Run the app
-python demo-app/app.py
+```bash
+// Install Flask
+$ pip install flask
+
+$ Run the app
+$ python demo-app/app.py
 ```
 
 **Expected Output**:
@@ -127,28 +131,30 @@ Starting Flask application on http://0.0.0.0:5000
 ```
 
 **Command Option B - Docker**:
-```bash
-# Build the image
-docker build -t platform-demo-app:latest demo-app/
 
-# Run the container
-docker run -p 5000:5000 platform-demo-app:latest
+```bash
+// Build the image
+$ docker build -t platform-demo-app:latest demo-app/
+
+// Run the container
+$ docker run -p 5000:5000 platform-demo-app:latest
 ```
 
 **Test the App**:
+
 ```bash
 # Health check
-curl http://localhost:5000/health
+$ curl http://localhost:5000/health
 # Output: {"status": "healthy"}
 
 # Create an item
-curl -X POST http://localhost:5000/items \
+$ curl -X POST http://localhost:5000/items \
   -H "Content-Type: application/json" \
   -d '{"name": "My Item", "description": "Test item"}'
 # Output: {"data": {"id": "abc123", "name": "My Item", ...}, "status": 201}
 
 # List items
-curl http://localhost:5000/items
+$ curl http://localhost:5000/items
 # Output: {"data": [...], "status": 200}
 ```
 
@@ -167,53 +173,57 @@ curl http://localhost:5000/items
 **Commands**:
 
 **Option A - Using kubectl directly**:
+
 ```bash
-# Build the Docker image locally
-docker build -t platform-demo-app:latest demo-app/
+// Build the Docker image locally
+$ docker build -t platform-demo-app:latest demo-app/
 
-# Load the image into Kind (Kind can't pull from local Docker daemon)
-kind load docker-image platform-demo-app:latest --name peh
+// Load the image into Kind (Kind can't pull from local Docker daemon)
+$ kind load docker-image platform-demo-app:latest --name peh
 
-# Apply manifests
-kubectl apply -f demo-app/k8s-manifests.yaml
+// Apply manifests
+$ kubectl apply -f demo-app/k8s-manifests.yaml
 
-# Verify deployment
-kubectl get pods -l app=platform-demo-app
-kubectl get svc platform-demo-app
-kubectl get hpa platform-demo-app-hpa
+// Verify deployment
+$ kubectl get pods -l app=platform-demo-app
+$ kubectl get svc platform-demo-app
+$ kubectl get hpa platform-demo-app-hpa
 ```
 
 **Option B - Using the self-service script**:
-```bash
-# Make the script executable
-chmod +x platform-deploy.sh
 
-# Deploy (requires ArgoCD setup)
-./platform-deploy.sh myapp default dev
+```bash
+// Make the script executable
+$ chmod +x platform-deploy.sh
+
+// Deploy (requires ArgoCD setup)
+$ ./platform-deploy.sh myapp default dev
 ```
 
 **Verify Deployment**:
+
 ```bash
-# Check pod status
-kubectl get pods -l app=platform-demo-app
+// Check pod status
+$ kubectl get pods -l app=platform-demo-app
 
-# Check service endpoints
-kubectl get endpoints platform-demo-app
+// Check service endpoints
+$ kubectl get endpoints platform-demo-app
 
-# Port-forward to test locally
-kubectl port-forward svc/platform-demo-app 5000:80
+// Port-forward to test locally
+$ kubectl port-forward svc/platform-demo-app 5000:80
 
-# Test via port-forward
-curl http://localhost:5000/health
+// Test via port-forward
+$ curl http://localhost:5000/health
 ```
 
 **Monitor HPA Scaling**:
-```bash
-# Watch the HPA behavior (press Ctrl+C to stop watching)
-kubectl get hpa platform-demo-app-hpa --watch
 
-# Generate load to trigger scaling (in another terminal)
-kubectl run -it --rm debug --image=alpine --restart=Never -- sh
+```bash
+// Watch the HPA behavior (press Ctrl+C to stop watching)
+$ kubectl get hpa platform-demo-app-hpa --watch
+
+// Generate load to trigger scaling (in another terminal)
+$ kubectl run -it --rm debug --image=alpine --restart=Never -- sh
 # Inside the pod:
 while true; do wget -q -O- http://platform-demo-app; done
 ```
@@ -231,8 +241,9 @@ while true; do wget -q -O- http://platform-demo-app; done
 **Objective**: Measure the developer experience of using the platform
 
 **Command**:
+
 ```bash
-python devex-survey.py
+$ python devex-survey.py
 ```
 
 **Interactive Prompts** (rate 1-5):
@@ -267,6 +278,7 @@ Category Breakdown:
 ```
 
 **Optional: Export Results**:
+
 ```bash
 # Run survey again and export
 python devex-survey.py
@@ -283,6 +295,7 @@ python devex-survey.py
 **Objective**: Identify friction points in the deployment workflow
 
 **Workflow Definition** (`workflow.yaml` is included in this directory — a 15-step platform deployment workflow). Here is a simplified example of the format:
+
 ```yaml
 workflow:
   name: "Deploy to Production"
