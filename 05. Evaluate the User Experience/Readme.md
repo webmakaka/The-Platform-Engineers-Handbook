@@ -241,12 +241,13 @@ Category Breakdown:
 
 ```bash
 # Run survey again and export
-python devex-survey.py
+$ python devex-survey.py
 # Choose 'y' when prompted to export
 # Enter filename: devex_baseline.json
 ```
 
-**Next Step**: Step 5 (Analyze workflow friction)
+
+<br/>
 
 ---
 
@@ -302,11 +303,12 @@ workflow:
 ```
 
 **Run Analysis**:
-```bash
-python friction-analyzer.py --workflow workflow.yaml
 
-# With JSON export
-python friction-analyzer.py --workflow workflow.yaml --export friction_report.json
+```bash
+$ python friction-analyzer.py --workflow workflow.yaml
+
+// With JSON export
+$ python friction-analyzer.py --workflow workflow.yaml --export friction_report.json
 ```
 
 **Expected Output**:
@@ -357,7 +359,8 @@ Friction Points:
 - Score 65 = High friction
 - Recommendation: Automate testing, reduce manual deployment steps
 
-**Next Step**: Step 6 (Collect Platform KPIs)
+
+<br/>
 
 ---
 
@@ -371,18 +374,22 @@ Friction Points:
 - (Optional) git repository path
 
 **Command**:
+
 ```bash
 # Collect from Kubernetes
-python platform-kpi-collector.py --namespace default
+$ python platform-kpi-collector.py --namespace default
 
 # Include git repository for lead time analysis
-python platform-kpi-collector.py --namespace default --git-repo /path/to/repo
+$ python platform-kpi-collector.py --namespace default --git-repo /path/to/repo
 
 # Export results
-python platform-kpi-collector.py --namespace default --export kpis.json
+$ python platform-kpi-collector.py --namespace default --export kpis.json
 ```
 
+<br/>
+
 **Expected Output**:
+
 ```
 ======================================================================
 PLATFORM KPI COLLECTION
@@ -413,6 +420,8 @@ Overall Performance Level: High
 ======================================================================
 ```
 
+<br/>
+
 **DORA Classification**:
 - **Deployment Frequency**: 2.5/day = meets elite threshold (>1/day)
 - **Lead Time**: 120 min (2 hours) = meets elite threshold (<1 day)
@@ -430,14 +439,17 @@ Overall Performance Level: High
 **Objective**: Validate all components of the Chapter 5 examples
 
 **Command**:
+
 ```bash
 # Run all tests
-python test-demo-app.py
+$ python test-demo-app.py
 
 # Or with pytest for detailed output
-pip install pytest
-pytest test-demo-app.py -v
+$ pip install pytest
+$ pytest test-demo-app.py -v
 ```
+
+<br/>
 
 **Expected Output**:
 ```
@@ -457,7 +469,7 @@ Ran 7 tests in 0.045s
 OK
 ```
 
-**Next Step**: Step 8 (Full integration)
+<br/>
 
 ---
 
@@ -468,36 +480,36 @@ OK
 **Recommended Execution Order**:
 
 ```bash
-# 1. Baseline survey (initial state)
-echo "Step 1: Baseline DevEx Measurement"
-python devex-survey.py
+// 1. Baseline survey (initial state)
+$ echo "Step 1: Baseline DevEx Measurement"
+$ python devex-survey.py
 # (Rate all questions, export to devex_baseline.json)
 
-# 2. Analyze current workflow friction
-echo "Step 2: Analyze Current Workflow Friction"
-python friction-analyzer.py --workflow workflow.yaml --export friction_baseline.json
+// 2. Analyze current workflow friction
+$ echo "Step 2: Analyze Current Workflow Friction"
+$ python friction-analyzer.py --workflow workflow.yaml --export friction_baseline.json
 
-# 3. Collect baseline KPIs
-echo "Step 3: Baseline Platform KPIs"
-python platform-kpi-collector.py --namespace default --export kpis_baseline.json
+// 3. Collect baseline KPIs
+$ echo "Step 3: Baseline Platform KPIs"
+$ python platform-kpi-collector.py --namespace default --export kpis_baseline.json
 
-# 4. Deploy demo app (if not already deployed)
-echo "Step 4: Deploy Demo Application"
-docker build -t platform-demo-app:latest demo-app/
-docker run -p 5000:5000 -d platform-demo-app:latest
+// 4. Deploy demo app (if not already deployed)
+$ echo "Step 4: Deploy Demo Application"
+$ docker build -t platform-demo-app:latest demo-app/
+$ docker run -p 5000:5000 -d platform-demo-app:latest
 
-# 5. Validate the deployment
-echo "Step 5: Validate Deployment"
-curl http://localhost:5000/health
-curl -X POST http://localhost:5000/items \
+// 5. Validate the deployment
+$ echo "Step 5: Validate Deployment"
+$ curl http://localhost:5000/health
+$ curl -X POST http://localhost:5000/items \
   -H "Content-Type: application/json" \
   -d '{"name": "Test Item"}'
 
-# 6. Test all components
-echo "Step 6: Run Test Suite"
-python test-demo-app.py
+// 6. Test all components
+$ echo "Step 6: Run Test Suite"
+$ python test-demo-app.py
 
-echo "All steps completed! Review exported JSON files for trend analysis."
+$ echo "All steps completed! Review exported JSON files for trend analysis."
 ```
 
 **Output Files Generated**:
@@ -506,6 +518,8 @@ echo "All steps completed! Review exported JSON files for trend analysis."
 - `kpis_baseline.json` - Platform KPIs (DORA metrics)
 
 **Compare Over Time**: Repeat this workflow after platform improvements to measure impact.
+
+<br/>
 
 ---
 
