@@ -17,6 +17,24 @@ The chapter culminates in a "zero-friction" deployment model where a single comm
 
 ## Prerequisites
 
+<br/>
+
+```bash
+$ kind create cluster --name platform-dev --image kindest/node:v1.37.0 --config - <<EOF
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 8080
+      - containerPort: 443
+        hostPort: 8443
+  - role: worker
+  - role: worker
+EOF
+```
+
 ### Running This Chapter Standalone
 
 > If you are jumping into this chapter without completing earlier chapters, use these commands to set up the infrastructure dependencies. If you already have them running, skip this section.
@@ -66,7 +84,9 @@ $ npm install express @opentelemetry/sdk-node \
 ```
 
 ### Optional: Kubernetes Cluster Setup
+
 For full deployment testing:
+
 ```bash
 # Start minikube
 minikube start
@@ -79,7 +99,9 @@ kubectl get nodes
 ```
 
 ### Optional: OpenTelemetry Collector
+
 For complete observability pipeline:
+
 ```bash
 # Deploy OpenTelemetry collector to your cluster
 kubectl apply -f https://raw.githubusercontent.com/open-telemetry/opentelemetry-helm-charts/main/charts/opentelemetry-collector/values.yaml
@@ -94,6 +116,7 @@ kubectl apply -f https://raw.githubusercontent.com/open-telemetry/opentelemetry-
 **Objective**: Review the demo app structure and deployment model
 
 **Commands**:
+
 ```bash
 // Examine the Flask app
 $ cat demo-app/app.py
