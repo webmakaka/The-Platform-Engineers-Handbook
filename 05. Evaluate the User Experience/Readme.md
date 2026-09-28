@@ -15,386 +15,6 @@ The chapter culminates in a "zero-friction" deployment model where a single comm
 
 ---
 
-## Code-to-Chapter Mapping
-
-This section maps each code file to its corresponding section and concept in Chapter 5.
-
-### Demo Application Files
-
-#### **demo-app/app.py** (Listing 5.1 - Conceptual)
-**Chapter Section**: 5.3 - Deploying as a user
-**Concepts**: REST API design, WSGI/Flask application structure, health checks, CRUD operations
-**Purpose**: A minimal Flask/WSGI application serving as the demo app for evaluating deployment UX. Implements:
-- Health check endpoint (`GET /health`) - required for Kubernetes probes
-- CRUD operations on items (`GET /items`, `POST /items`, `PUT /items/<id>`, `DELETE /items/<id>`)
-- In-memory data store for simplicity
-- JSON request/response handling
-- Error handling and validation
-
-**Usage Context**: Demonstrates how a developer creates and deploys a basic microservice through the platform pipeline.
-
----
-
-#### **demo-app/Dockerfile** (Listing 5.3 - Multi-stage Docker build)
-**Chapter Section**: 5.3 - Deploying as a user
-**Concepts**: Container security best practices, multi-stage builds, non-root users, health checks
-**Purpose**: Multi-stage Dockerfile following security best practices for containerizing the demo app:
-- Stage 1 (Builder): Installs Flask dependencies
-- Stage 2 (Runtime): Python 3.11 slim base, non-root user (appuser:1000), health check configuration
-- Uses `--chown=appuser:appuser` on COPY to ensure the non-root user can read the app file
-- Runs `python app.py` directly (not Flask CLI) for reliable startup
-- Includes HEALTHCHECK directive for container orchestration
-- Avoids running as root (security principle)
-- Minimizes final image size
-
-**Alignment**: Demonstrates how the platform enforces security through container standards without developer friction.
-
----
-
-#### **otel-deployment.yaml** (Listing 5.X — OTEL-instrumented Kubernetes Deployment)
-**Chapter Section**: 5.4 - Application instrumentation for observability
-**Concepts**: OTEL env-var wiring, immutable image tags, NODE_OPTIONS preload, security context
-**Purpose**: Kubernetes Deployment manifest that connects the Node.js demo app to the platform OTEL Collector. Key design decisions:
-- `image` tag is always the git commit SHA injected by the pipeline — never `:latest`
-- `NODE_OPTIONS: "--require ./instrumentation.js"` preloads the SDK before any application module, so auto-instrumentation captures all HTTP and Express traffic from the first request
-- `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` point to the Collector DaemonSet deployed in the `observability` namespace (Chapter 4)
-- Security context matches `Dockerfile`: non-root user (1001), read-only root filesystem, all capabilities dropped
-- Prometheus scrape annotations enable pull-based metrics collection alongside OTLP push
-
-**Apply:**
-```bash
-kubectl apply -f otel-deployment.yaml -n demo
-```
-
----
-
-#### **argocd-app.yaml** (Listing 5.X — GitOps application registration)
-**Chapter Section**: 5.3 - Deploying as a user
-**Concepts**: GitOps, ArgoCD Application CRD, automated sync, self-heal, Helm integration
-**Purpose**: Registers the demo application with ArgoCD for declarative Git-driven deployment. Key design decisions:
-- Uses `helm.valueFiles` so ArgoCD reads `helm/values.yaml` (updated by the pipeline) as its image tag source — consistent with the CI/CD pipeline approach in `.github/workflows/deploy.yml`
-- `automated.selfHeal: true` reverts any manual cluster mutations, enforcing Git as the only source of truth
-- `automated.prune: true` removes resources deleted from Git, preventing stale deployments
-
-**Apply once to bootstrap:**
-```bash
-kubectl apply -f argocd-app.yaml -n argocd
-```
-
----
-
-#### **helm/values.yaml** (Listing 5.X — Helm values as GitOps source of truth)
-**Chapter Section**: 5.3 - Deploying as a user
-**Concepts**: Helm values, immutable image tags, GitOps update pattern
-**Purpose**: The single file the CI/CD pipeline modifies on every successful build. The pipeline runs `yq e -i ".image.tag = \"<sha>\"" helm/values.yaml`, commits, and pushes; ArgoCD detects the diff and syncs. Never set `image.tag` to `latest` — the pipeline always uses the git commit SHA for immutable, traceable deployments.
-
----
-
-#### **Dockerfile** (Listing 5.X — Multi-stage Node.js container build)
-**Chapter Section**: 5.3 - Deploying as a user
-**Concepts**: Multi-stage builds, production-only dependencies, non-root user, layer caching, health checks
-**Purpose**: Production-ready Dockerfile for the Node.js Express demo application (`app.js`). Key design decisions:
-- **Stage 1 (Builder)**: `node:24-alpine` with full `npm ci` — devDependencies are required by the build toolchain; omitting them at this stage would cause `npm run build` to fail
-- **Stage 2 (Production)**: Fresh `node:24-alpine` base with a clean `npm ci --omit=dev` — no build tools or devDependencies in the final image
-- Non-root user (`nodejs:1001`) created with Alpine `addgroup`/`adduser`
-- `--chown=nodejs:nodejs` on all `COPY` instructions from the builder
-- `HEALTHCHECK` directive wired to `healthcheck.js` for Kubernetes liveness/readiness probes
-
-**Build and run locally:**
-```bash
-docker build -t ch5-demo-app:latest .
-docker run -p 3000:3000 ch5-demo-app:latest
-curl http://localhost:3000/health
-```
-
-**Pipeline integration**: `.github/workflows/deploy.yml` builds and pushes this image automatically on every push to `main` or `develop`. Registry authentication is handled via `docker/login-action@v3` using `GITHUB_TOKEN`.
-
----
-
-#### **demo-app/k8s-manifests.yaml** (Listing 5.5 - Zero-friction deployment concept)
-**Chapter Section**: 5.3 - Deploying as a user
-**Concepts**: Kubernetes Deployment, Service, HorizontalPodAutoscaler, PodDisruptionBudget, probes
-**Purpose**: Complete Kubernetes manifest for production-ready deployment:
-- **Deployment** (2 replicas, rolling update strategy)
-  - Three health probes: startup, liveness, readiness
-  - Resource requests/limits (CPU: 50-200m, Memory: 64-256Mi)
-  - Security context (non-root, dropped ALL capabilities)
-  - Environment variables for Flask
-
-- **Service** (ClusterIP for internal access)
-  - Internal discovery mechanism for other services
-
-- **HorizontalPodAutoscaler** (scales 2-5 replicas)
-  - CPU utilization target: 50%
-  - Memory utilization target: 70%
-  - Aggressive scale-up (100% per 30s), conservative scale-down (50% per 60s)
-
-- **PodDisruptionBudget** (ensures availability)
-  - Minimum 1 pod available during disruptions
-
-**Alignment**: Demonstrates self-service deployment with pre-configured production patterns—developers get high-availability setup automatically.
-
----
-
-### Observability & Instrumentation Files
-
-#### **instrumentation.js** (Listing 5.7 - OpenTelemetry setup)
-**Chapter Section**: 5.4 - Application instrumentation for observability
-**Concepts**: OpenTelemetry SDK initialization, auto-instrumentation, resource attributes, exporter configuration
-**Purpose**: Configures OpenTelemetry for automatic telemetry collection in Node.js applications:
-- Initializes NodeSDK with auto-instrumentations for HTTP, Express, etc.
-- Sets up OTLP gRPC exporter (configurable via env vars)
-- Defines service metadata (name, version, environment)
-- Must be required BEFORE any other modules: `node --require ./instrumentation.js app.js`
-- Graceful shutdown on SIGTERM
-
-**Manuscript Quote**: "Using a standard like OpenTelemetry, as discussed earlier, provides vendor-neutral instrumentation that prevents lock-in."
-
-**Prerequisites**:
-```bash
-npm install @opentelemetry/sdk-node \
-  @opentelemetry/auto-instrumentations-node \
-  @opentelemetry/exporter-trace-otlp-grpc \
-  @opentelemetry/exporter-metrics-otlp-grpc \
-  @opentelemetry/resources \
-  @opentelemetry/semantic-conventions
-```
-
----
-
-#### **app.js** (Listing 5.8 - Custom spans and metrics)
-**Chapter Section**: 5.4 - Application instrumentation for observability
-**Concepts**: Custom spans, span attributes, nested spans, error handling, OpenTelemetry API usage
-**Purpose**: Demonstrates custom instrumentation in Express.js application:
-- Creates custom spans for business logic (`fetch-items`)
-- Nested spans for database operations (`db-query`)
-- Span attributes (e.g., `db.system`, `db.statement`, `app.items.count`)
-- Span events (e.g., `query-started`, `query-completed`)
-- Error recording and status management
-- Simulated database query for demonstration
-
-**Manuscript Concept**: "Custom spans capture information such as Names, attributes, events, status, duration... tracking the application-specific operations."
-
-**Usage**: Requires instrumentation.js to be pre-loaded:
-```bash
-node --require ./instrumentation.js app.js
-```
-
----
-
-#### **logger.js** (Listing 5.9 - Structured logging with trace context)
-**Chapter Section**: 5.4 - Application instrumentation for observability
-**Concepts**: Log-trace correlation, Winston logger, trace context injection, structured logging
-**Purpose**: Winston logger configuration that injects OpenTelemetry trace context into every log:
-- Custom format function extracts active span context
-- Injects `trace_id`, `span_id`, `trace_flags` into every log entry
-- Enables log-trace correlation for debugging distributed systems
-- JSON output format for log aggregation systems
-- Default metadata (service name, environment)
-
-**Manuscript Quote**: "Injecting trace context into logs enables log-trace correlation and can easily jump into tracing from your logs."
-
-**Output Example**:
-```json
-{
-  "level": "info",
-  "message": "Processing request",
-  "service": "demo-app",
-  "trace_id": "abc123...",
-  "span_id": "def456...",
-  "timestamp": "2025-01-20T10:30:00Z"
-}
-```
-
----
-
-### Deployment & Self-Service Files
-
-#### **platform-deploy.sh** (Listing 5.4 - Self-service deployment script)
-**Chapter Section**: 5.3 - Deploying as a user (self-service mechanism)
-**Concepts**: Self-service CLI, Kustomize overlays, ArgoCD integration, namespace automation
-**Purpose**: Developer-friendly deployment script enabling zero-touch deployment:
-- Validates prerequisites (kubectl, kustomize, argocd)
-- Automatically creates namespaces with labels
-- Applies Kustomize overlays for environment-specific configuration
-- Integrates with ArgoCD for GitOps-based deployment
-- Registers application with ArgoCD for continuous reconciliation
-- Provides feedback on deployment success
-
-**Usage**:
-```bash
-./platform-deploy.sh <app-name> <namespace> [environment]
-# Example:
-./platform-deploy.sh myapp production prod
-```
-
-**Manuscript Context**: Demonstrates the "self-service platform" that allows developers to deploy "rapidly while meeting all specific internal requirements" without manual tickets or approvals.
-
----
-
-#### **secure-deployment.yaml** (Listing 5.6 - Secure Kubernetes deployment)
-**Chapter Section**: 5.3 - Deploying as a user (security in deployment pipeline)
-**Concepts**: Security context, pod/container security policies, resource limits, health checks
-**Purpose**: Kubernetes Deployment manifest demonstrating security best practices:
-- **Pod Security Context**:
-  - `runAsNonRoot: true`, `runAsUser: 1000`, `fsGroup: 1000`
-  - `seccompProfile: RuntimeDefault`
-
-- **Container Security Context**:
-  - `allowPrivilegeEscalation: false`
-  - `readOnlyRootFilesystem: true`
-  - `capabilities.drop: [ALL]`
-
-- **Resource Constraints**:
-  - Requests: 100m CPU, 128Mi memory
-  - Limits: 500m CPU, 256Mi memory
-
-- **Health Probes**:
-  - Liveness and readiness on `/health` endpoint (HTTPS)
-
-- **Observability**:
-  - Prometheus scrape annotations
-  - OTEL endpoint configuration
-
-**Manuscript Quote**: "Early security scanning in the deployment pipeline to identify vulnerabilities before production can cover challenges around container image scanning for CVEs, secret detection embedded in the code and RBAC validation for proper permissions."
-
----
-
-### DevEx Measurement Tools
-
-#### **devex-survey.py** (Section 5.2 - Developer experience measurement)
-**Chapter Section**: 5.2 - Developer experience as the backbone of platforms
-**Concepts**: DevEx metrics, quantitative UX evaluation, category scoring, developer feedback
-**Purpose**: Interactive CLI tool that administers a developer experience survey and calculates a composite DevEx score:
-
-**Survey Categories** (10 questions):
-1. **Onboarding** (2 questions): Setup time, instruction clarity
-2. **Deployment** (2 questions): Ease of deployment, feedback speed
-3. **Documentation** (2 questions): Completeness, clarity
-4. **Developer Tools** (3 questions): Tool satisfaction, API intuitiveness, error message helpfulness
-5. **Feedback Loops** (1 question): Validation speed
-
-**Output**:
-- Overall DevEx Score (0-100)
-- Score interpretation (Excellent/Good/Fair/Poor)
-- Category breakdown with visual bar chart
-- Detailed responses
-- JSON export capability
-
-**Usage**:
-```bash
-python devex-survey.py
-# Responds to interactive prompts with 1-5 ratings
-```
-
-**Manuscript Connection**: Chapter emphasizes that "measuring DevEx became increasingly prevalent" and that DevEx rests on three pillars: efficiency, satisfaction, and impact.
-
----
-
-#### **friction-analyzer.py** (Section 5.3 - Friction in deployment workflows)
-**Chapter Section**: 5.3 - Deploying as a user (identifying workflow friction)
-**Concepts**: Workflow analysis, friction scoring, bottleneck identification, optimization opportunities
-**Purpose**: Analyzes developer workflows (in YAML format) to identify friction points and calculate a friction score (0-100):
-
-**Workflow Input Format** (YAML):
-- Step name, type (manual/automated/semi_automated)
-- Time in minutes, dependencies, cognitive load (1-5), error-prone flag, feedback loop presence
-
-**Friction Scoring**:
-- Manual steps: +15 points each
-- Missing feedback loops: +20 points each
-- High cognitive load: +10 points per level
-- Error-prone steps: +15 points each
-- Time overhead: +0.5 points per minute
-- Dependency chains: +5 points per dependency
-
-**Output**:
-- Friction score (0-100) with level classification
-- Critical path analysis (longest dependency chain)
-- Parallelization potential identification
-- Specific friction points with priority ratings
-- JSON export for tracking
-
-**Example Workflow**:
-```yaml
-workflow:
-  name: "Deploy to Production"
-  steps:
-    - name: "Local Setup"
-      manual: true
-      time_minutes: 30
-      dependencies: []
-    - name: "Commit & Push"
-      manual: true
-      time_minutes: 5
-      dependencies: ["Local Setup"]
-    - name: "CI Pipeline"
-      automated: true
-      time_minutes: 15
-      dependencies: ["Commit & Push"]
-```
-
-**Usage**:
-```bash
-python friction-analyzer.py --workflow workflow.yaml [--export report.json]
-```
-
----
-
-#### **platform-kpi-collector.py** (Section 5.2 - Platform KPIs)
-**Chapter Section**: 5.2 - Developer experience as the backbone of platforms (KPI measurement)
-**Concepts**: DORA metrics, platform performance measurement, deployment frequency, lead time, MTTR, change failure rate
-**Purpose**: Collects and analyzes the Four Key Metrics (DORA metrics) from Kubernetes clusters and git repositories:
-
-**Metrics Collected**:
-1. **Deployment Frequency**: Deployments per day (from kubectl rollout history)
-2. **Lead Time for Changes**: Time from commit to production (minutes, estimated from git)
-3. **Mean Time to Recovery (MTTR)**: Recovery time in minutes (estimated from pod restarts)
-4. **Change Failure Rate**: Percentage of deployments requiring hotfixes (from cluster events)
-
-**Performance Classification** (DORA Elite thresholds):
-- Elite: >1 deployment/day, <1 day lead time, <1 hour MTTR, <15% failure rate
-- High: 3+ metrics meet elite threshold
-- Medium: 2+ metrics meet elite threshold
-- Low: <2 metrics meet elite threshold
-
-**Output**:
-- Formatted table with all four metrics
-- Performance level classification
-- JSON export with detailed breakdown
-
-**Manuscript Context**: Chapter 5.2 states "Figure 5.2 shows the 3 critical axes of the platform KPIs" and discusses efficiency, satisfaction, and impact as fundamental pillars.
-
-**Usage**:
-```bash
-python platform-kpi-collector.py --namespace default --git-repo /path/to/repo [--export kpis.json]
-```
-
-**Prerequisites**: kubectl (for cluster access), git (for repository analysis)
-
----
-
-#### **test-demo-app.py** (Section 5.5 - Validation)
-**Chapter Section**: 5.4 & 5.5 - Testing and validation
-**Concepts**: Unit testing, code validation, syntax verification
-**Purpose**: Test suite that validates the demo app and DevEx tool configuration:
-
-**Test Coverage**:
-- **Demo App Structure**: Dockerfile, app.py, k8s-manifests.yaml existence
-- **App Code Validation**: Python syntax and compilation check
-- **DevEx Tool Validation**: Syntax check for survey, friction analyzer, and KPI collector scripts
-
-**Usage**:
-```bash
-# Using Python's unittest
-python test-demo-app.py
-
-# Or with pytest for more detailed output
-pytest test-demo-app.py -v
-```
-
----
-
 ## Prerequisites
 
 ### Running This Chapter Standalone
@@ -926,6 +546,388 @@ The following files exist in the code directory but are not explicitly mapped to
 
 All other files are accounted for in the Code-to-Chapter Mapping section above.
 
+
+---
+
+## Code-to-Chapter Mapping
+
+This section maps each code file to its corresponding section and concept in Chapter 5.
+
+### Demo Application Files
+
+#### **demo-app/app.py** (Listing 5.1 - Conceptual)
+**Chapter Section**: 5.3 - Deploying as a user
+**Concepts**: REST API design, WSGI/Flask application structure, health checks, CRUD operations
+**Purpose**: A minimal Flask/WSGI application serving as the demo app for evaluating deployment UX. Implements:
+- Health check endpoint (`GET /health`) - required for Kubernetes probes
+- CRUD operations on items (`GET /items`, `POST /items`, `PUT /items/<id>`, `DELETE /items/<id>`)
+- In-memory data store for simplicity
+- JSON request/response handling
+- Error handling and validation
+
+**Usage Context**: Demonstrates how a developer creates and deploys a basic microservice through the platform pipeline.
+
+---
+
+#### **demo-app/Dockerfile** (Listing 5.3 - Multi-stage Docker build)
+**Chapter Section**: 5.3 - Deploying as a user
+**Concepts**: Container security best practices, multi-stage builds, non-root users, health checks
+**Purpose**: Multi-stage Dockerfile following security best practices for containerizing the demo app:
+- Stage 1 (Builder): Installs Flask dependencies
+- Stage 2 (Runtime): Python 3.11 slim base, non-root user (appuser:1000), health check configuration
+- Uses `--chown=appuser:appuser` on COPY to ensure the non-root user can read the app file
+- Runs `python app.py` directly (not Flask CLI) for reliable startup
+- Includes HEALTHCHECK directive for container orchestration
+- Avoids running as root (security principle)
+- Minimizes final image size
+
+**Alignment**: Demonstrates how the platform enforces security through container standards without developer friction.
+
+---
+
+#### **otel-deployment.yaml** (Listing 5.X — OTEL-instrumented Kubernetes Deployment)
+**Chapter Section**: 5.4 - Application instrumentation for observability
+**Concepts**: OTEL env-var wiring, immutable image tags, NODE_OPTIONS preload, security context
+**Purpose**: Kubernetes Deployment manifest that connects the Node.js demo app to the platform OTEL Collector. Key design decisions:
+- `image` tag is always the git commit SHA injected by the pipeline — never `:latest`
+- `NODE_OPTIONS: "--require ./instrumentation.js"` preloads the SDK before any application module, so auto-instrumentation captures all HTTP and Express traffic from the first request
+- `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` point to the Collector DaemonSet deployed in the `observability` namespace (Chapter 4)
+- Security context matches `Dockerfile`: non-root user (1001), read-only root filesystem, all capabilities dropped
+- Prometheus scrape annotations enable pull-based metrics collection alongside OTLP push
+
+**Apply:**
+```bash
+kubectl apply -f otel-deployment.yaml -n demo
+```
+
+---
+
+#### **argocd-app.yaml** (Listing 5.X — GitOps application registration)
+**Chapter Section**: 5.3 - Deploying as a user
+**Concepts**: GitOps, ArgoCD Application CRD, automated sync, self-heal, Helm integration
+**Purpose**: Registers the demo application with ArgoCD for declarative Git-driven deployment. Key design decisions:
+- Uses `helm.valueFiles` so ArgoCD reads `helm/values.yaml` (updated by the pipeline) as its image tag source — consistent with the CI/CD pipeline approach in `.github/workflows/deploy.yml`
+- `automated.selfHeal: true` reverts any manual cluster mutations, enforcing Git as the only source of truth
+- `automated.prune: true` removes resources deleted from Git, preventing stale deployments
+
+**Apply once to bootstrap:**
+```bash
+kubectl apply -f argocd-app.yaml -n argocd
+```
+
+---
+
+#### **helm/values.yaml** (Listing 5.X — Helm values as GitOps source of truth)
+**Chapter Section**: 5.3 - Deploying as a user
+**Concepts**: Helm values, immutable image tags, GitOps update pattern
+**Purpose**: The single file the CI/CD pipeline modifies on every successful build. The pipeline runs `yq e -i ".image.tag = \"<sha>\"" helm/values.yaml`, commits, and pushes; ArgoCD detects the diff and syncs. Never set `image.tag` to `latest` — the pipeline always uses the git commit SHA for immutable, traceable deployments.
+
+---
+
+#### **Dockerfile** (Listing 5.X — Multi-stage Node.js container build)
+**Chapter Section**: 5.3 - Deploying as a user
+**Concepts**: Multi-stage builds, production-only dependencies, non-root user, layer caching, health checks
+**Purpose**: Production-ready Dockerfile for the Node.js Express demo application (`app.js`). Key design decisions:
+- **Stage 1 (Builder)**: `node:24-alpine` with full `npm ci` — devDependencies are required by the build toolchain; omitting them at this stage would cause `npm run build` to fail
+- **Stage 2 (Production)**: Fresh `node:24-alpine` base with a clean `npm ci --omit=dev` — no build tools or devDependencies in the final image
+- Non-root user (`nodejs:1001`) created with Alpine `addgroup`/`adduser`
+- `--chown=nodejs:nodejs` on all `COPY` instructions from the builder
+- `HEALTHCHECK` directive wired to `healthcheck.js` for Kubernetes liveness/readiness probes
+
+**Build and run locally:**
+```bash
+docker build -t ch5-demo-app:latest .
+docker run -p 3000:3000 ch5-demo-app:latest
+curl http://localhost:3000/health
+```
+
+**Pipeline integration**: `.github/workflows/deploy.yml` builds and pushes this image automatically on every push to `main` or `develop`. Registry authentication is handled via `docker/login-action@v3` using `GITHUB_TOKEN`.
+
+---
+
+#### **demo-app/k8s-manifests.yaml** (Listing 5.5 - Zero-friction deployment concept)
+**Chapter Section**: 5.3 - Deploying as a user
+**Concepts**: Kubernetes Deployment, Service, HorizontalPodAutoscaler, PodDisruptionBudget, probes
+**Purpose**: Complete Kubernetes manifest for production-ready deployment:
+- **Deployment** (2 replicas, rolling update strategy)
+  - Three health probes: startup, liveness, readiness
+  - Resource requests/limits (CPU: 50-200m, Memory: 64-256Mi)
+  - Security context (non-root, dropped ALL capabilities)
+  - Environment variables for Flask
+
+- **Service** (ClusterIP for internal access)
+  - Internal discovery mechanism for other services
+
+- **HorizontalPodAutoscaler** (scales 2-5 replicas)
+  - CPU utilization target: 50%
+  - Memory utilization target: 70%
+  - Aggressive scale-up (100% per 30s), conservative scale-down (50% per 60s)
+
+- **PodDisruptionBudget** (ensures availability)
+  - Minimum 1 pod available during disruptions
+
+**Alignment**: Demonstrates self-service deployment with pre-configured production patterns—developers get high-availability setup automatically.
+
+---
+
+### Observability & Instrumentation Files
+
+#### **instrumentation.js** (Listing 5.7 - OpenTelemetry setup)
+**Chapter Section**: 5.4 - Application instrumentation for observability
+**Concepts**: OpenTelemetry SDK initialization, auto-instrumentation, resource attributes, exporter configuration
+**Purpose**: Configures OpenTelemetry for automatic telemetry collection in Node.js applications:
+- Initializes NodeSDK with auto-instrumentations for HTTP, Express, etc.
+- Sets up OTLP gRPC exporter (configurable via env vars)
+- Defines service metadata (name, version, environment)
+- Must be required BEFORE any other modules: `node --require ./instrumentation.js app.js`
+- Graceful shutdown on SIGTERM
+
+**Manuscript Quote**: "Using a standard like OpenTelemetry, as discussed earlier, provides vendor-neutral instrumentation that prevents lock-in."
+
+**Prerequisites**:
+```bash
+npm install @opentelemetry/sdk-node \
+  @opentelemetry/auto-instrumentations-node \
+  @opentelemetry/exporter-trace-otlp-grpc \
+  @opentelemetry/exporter-metrics-otlp-grpc \
+  @opentelemetry/resources \
+  @opentelemetry/semantic-conventions
+```
+
+---
+
+#### **app.js** (Listing 5.8 - Custom spans and metrics)
+**Chapter Section**: 5.4 - Application instrumentation for observability
+**Concepts**: Custom spans, span attributes, nested spans, error handling, OpenTelemetry API usage
+**Purpose**: Demonstrates custom instrumentation in Express.js application:
+- Creates custom spans for business logic (`fetch-items`)
+- Nested spans for database operations (`db-query`)
+- Span attributes (e.g., `db.system`, `db.statement`, `app.items.count`)
+- Span events (e.g., `query-started`, `query-completed`)
+- Error recording and status management
+- Simulated database query for demonstration
+
+**Manuscript Concept**: "Custom spans capture information such as Names, attributes, events, status, duration... tracking the application-specific operations."
+
+**Usage**: Requires instrumentation.js to be pre-loaded:
+```bash
+node --require ./instrumentation.js app.js
+```
+
+---
+
+#### **logger.js** (Listing 5.9 - Structured logging with trace context)
+**Chapter Section**: 5.4 - Application instrumentation for observability
+**Concepts**: Log-trace correlation, Winston logger, trace context injection, structured logging
+**Purpose**: Winston logger configuration that injects OpenTelemetry trace context into every log:
+- Custom format function extracts active span context
+- Injects `trace_id`, `span_id`, `trace_flags` into every log entry
+- Enables log-trace correlation for debugging distributed systems
+- JSON output format for log aggregation systems
+- Default metadata (service name, environment)
+
+**Manuscript Quote**: "Injecting trace context into logs enables log-trace correlation and can easily jump into tracing from your logs."
+
+**Output Example**:
+```json
+{
+  "level": "info",
+  "message": "Processing request",
+  "service": "demo-app",
+  "trace_id": "abc123...",
+  "span_id": "def456...",
+  "timestamp": "2025-01-20T10:30:00Z"
+}
+```
+
+---
+
+### Deployment & Self-Service Files
+
+#### **platform-deploy.sh** (Listing 5.4 - Self-service deployment script)
+**Chapter Section**: 5.3 - Deploying as a user (self-service mechanism)
+**Concepts**: Self-service CLI, Kustomize overlays, ArgoCD integration, namespace automation
+**Purpose**: Developer-friendly deployment script enabling zero-touch deployment:
+- Validates prerequisites (kubectl, kustomize, argocd)
+- Automatically creates namespaces with labels
+- Applies Kustomize overlays for environment-specific configuration
+- Integrates with ArgoCD for GitOps-based deployment
+- Registers application with ArgoCD for continuous reconciliation
+- Provides feedback on deployment success
+
+**Usage**:
+```bash
+./platform-deploy.sh <app-name> <namespace> [environment]
+# Example:
+./platform-deploy.sh myapp production prod
+```
+
+**Manuscript Context**: Demonstrates the "self-service platform" that allows developers to deploy "rapidly while meeting all specific internal requirements" without manual tickets or approvals.
+
+---
+
+#### **secure-deployment.yaml** (Listing 5.6 - Secure Kubernetes deployment)
+**Chapter Section**: 5.3 - Deploying as a user (security in deployment pipeline)
+**Concepts**: Security context, pod/container security policies, resource limits, health checks
+**Purpose**: Kubernetes Deployment manifest demonstrating security best practices:
+- **Pod Security Context**:
+  - `runAsNonRoot: true`, `runAsUser: 1000`, `fsGroup: 1000`
+  - `seccompProfile: RuntimeDefault`
+
+- **Container Security Context**:
+  - `allowPrivilegeEscalation: false`
+  - `readOnlyRootFilesystem: true`
+  - `capabilities.drop: [ALL]`
+
+- **Resource Constraints**:
+  - Requests: 100m CPU, 128Mi memory
+  - Limits: 500m CPU, 256Mi memory
+
+- **Health Probes**:
+  - Liveness and readiness on `/health` endpoint (HTTPS)
+
+- **Observability**:
+  - Prometheus scrape annotations
+  - OTEL endpoint configuration
+
+**Manuscript Quote**: "Early security scanning in the deployment pipeline to identify vulnerabilities before production can cover challenges around container image scanning for CVEs, secret detection embedded in the code and RBAC validation for proper permissions."
+
+---
+
+### DevEx Measurement Tools
+
+#### **devex-survey.py** (Section 5.2 - Developer experience measurement)
+**Chapter Section**: 5.2 - Developer experience as the backbone of platforms
+**Concepts**: DevEx metrics, quantitative UX evaluation, category scoring, developer feedback
+**Purpose**: Interactive CLI tool that administers a developer experience survey and calculates a composite DevEx score:
+
+**Survey Categories** (10 questions):
+1. **Onboarding** (2 questions): Setup time, instruction clarity
+2. **Deployment** (2 questions): Ease of deployment, feedback speed
+3. **Documentation** (2 questions): Completeness, clarity
+4. **Developer Tools** (3 questions): Tool satisfaction, API intuitiveness, error message helpfulness
+5. **Feedback Loops** (1 question): Validation speed
+
+**Output**:
+- Overall DevEx Score (0-100)
+- Score interpretation (Excellent/Good/Fair/Poor)
+- Category breakdown with visual bar chart
+- Detailed responses
+- JSON export capability
+
+**Usage**:
+```bash
+python devex-survey.py
+# Responds to interactive prompts with 1-5 ratings
+```
+
+**Manuscript Connection**: Chapter emphasizes that "measuring DevEx became increasingly prevalent" and that DevEx rests on three pillars: efficiency, satisfaction, and impact.
+
+---
+
+#### **friction-analyzer.py** (Section 5.3 - Friction in deployment workflows)
+**Chapter Section**: 5.3 - Deploying as a user (identifying workflow friction)
+**Concepts**: Workflow analysis, friction scoring, bottleneck identification, optimization opportunities
+**Purpose**: Analyzes developer workflows (in YAML format) to identify friction points and calculate a friction score (0-100):
+
+**Workflow Input Format** (YAML):
+- Step name, type (manual/automated/semi_automated)
+- Time in minutes, dependencies, cognitive load (1-5), error-prone flag, feedback loop presence
+
+**Friction Scoring**:
+- Manual steps: +15 points each
+- Missing feedback loops: +20 points each
+- High cognitive load: +10 points per level
+- Error-prone steps: +15 points each
+- Time overhead: +0.5 points per minute
+- Dependency chains: +5 points per dependency
+
+**Output**:
+- Friction score (0-100) with level classification
+- Critical path analysis (longest dependency chain)
+- Parallelization potential identification
+- Specific friction points with priority ratings
+- JSON export for tracking
+
+**Example Workflow**:
+```yaml
+workflow:
+  name: "Deploy to Production"
+  steps:
+    - name: "Local Setup"
+      manual: true
+      time_minutes: 30
+      dependencies: []
+    - name: "Commit & Push"
+      manual: true
+      time_minutes: 5
+      dependencies: ["Local Setup"]
+    - name: "CI Pipeline"
+      automated: true
+      time_minutes: 15
+      dependencies: ["Commit & Push"]
+```
+
+**Usage**:
+```bash
+python friction-analyzer.py --workflow workflow.yaml [--export report.json]
+```
+
+---
+
+#### **platform-kpi-collector.py** (Section 5.2 - Platform KPIs)
+**Chapter Section**: 5.2 - Developer experience as the backbone of platforms (KPI measurement)
+**Concepts**: DORA metrics, platform performance measurement, deployment frequency, lead time, MTTR, change failure rate
+**Purpose**: Collects and analyzes the Four Key Metrics (DORA metrics) from Kubernetes clusters and git repositories:
+
+**Metrics Collected**:
+1. **Deployment Frequency**: Deployments per day (from kubectl rollout history)
+2. **Lead Time for Changes**: Time from commit to production (minutes, estimated from git)
+3. **Mean Time to Recovery (MTTR)**: Recovery time in minutes (estimated from pod restarts)
+4. **Change Failure Rate**: Percentage of deployments requiring hotfixes (from cluster events)
+
+**Performance Classification** (DORA Elite thresholds):
+- Elite: >1 deployment/day, <1 day lead time, <1 hour MTTR, <15% failure rate
+- High: 3+ metrics meet elite threshold
+- Medium: 2+ metrics meet elite threshold
+- Low: <2 metrics meet elite threshold
+
+**Output**:
+- Formatted table with all four metrics
+- Performance level classification
+- JSON export with detailed breakdown
+
+**Manuscript Context**: Chapter 5.2 states "Figure 5.2 shows the 3 critical axes of the platform KPIs" and discusses efficiency, satisfaction, and impact as fundamental pillars.
+
+**Usage**:
+```bash
+python platform-kpi-collector.py --namespace default --git-repo /path/to/repo [--export kpis.json]
+```
+
+**Prerequisites**: kubectl (for cluster access), git (for repository analysis)
+
+---
+
+#### **test-demo-app.py** (Section 5.5 - Validation)
+**Chapter Section**: 5.4 & 5.5 - Testing and validation
+**Concepts**: Unit testing, code validation, syntax verification
+**Purpose**: Test suite that validates the demo app and DevEx tool configuration:
+
+**Test Coverage**:
+- **Demo App Structure**: Dockerfile, app.py, k8s-manifests.yaml existence
+- **App Code Validation**: Python syntax and compilation check
+- **DevEx Tool Validation**: Syntax check for survey, friction analyzer, and KPI collector scripts
+
+**Usage**:
+```bash
+# Using Python's unittest
+python test-demo-app.py
+
+# Or with pytest for more detailed output
+pytest test-demo-app.py -v
+```
+
+
 ---
 
 ## Companion Website Alignment
@@ -1098,18 +1100,3 @@ python platform-kpi-collector.py --namespace default
 4. Automation of repetitive tasks
 5. Observable metrics for continuous improvement
 
----
-
-## Further Reading
-
-- [DORA: State of DevOps Reports](https://dora.dev/)
-- [OpenTelemetry Documentation](https://opentelemetry.io/docs/)
-- [Kubernetes Best Practices](https://kubernetes.io/docs/concepts/configuration/overview/)
-- [Container Security Best Practices](https://kubernetes.io/docs/concepts/security/)
-- [Developer Experience: Atlassian Research](https://www.atlassian.com/developer-experience)
-
----
-
-**Author:** Ajay Chankramath (ajay@platformetrics.com)
-**Book:** The Platform Engineer's Handbook (Packt Publishing)
-**Last Updated**: November 2025
