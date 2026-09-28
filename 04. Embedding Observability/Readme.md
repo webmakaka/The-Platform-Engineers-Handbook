@@ -86,8 +86,6 @@ This directory contains comprehensive, production-ready examples for implementin
 
 ## Prerequisites
 
-### Running This Chapter Standalone
-
 <br/>
 
 ```bash
