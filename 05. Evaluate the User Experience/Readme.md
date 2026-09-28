@@ -1,4 +1,4 @@
-# Chapter 5: Evaluate the User Experience - Platform Engineering Handbook
+# Chapter 5: Evaluate the User Experience
 
 ## Chapter Overview
 
