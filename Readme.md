@@ -70,6 +70,8 @@ https://www.youtube.com/watch?v=bNaqP8LDHAo
 
 ### Chapter 5: Evaluate the User Experience
 
+https://www.youtube.com/watch?v=1U73OLjmae4
+
 - Developer experience as the backbone of platforms
 - Deploying as a user
 - Application instrumentation for observability
