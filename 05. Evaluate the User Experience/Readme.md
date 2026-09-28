@@ -147,10 +147,10 @@ $ curl http://localhost:5000/items
 
 ```bash
 // Build the Docker image locally
-$ docker build -t platform-demo-app:latest demo-app/
+$ docker build -t platform-demo-app:v1 demo-app/
 
 // Load the image into Kind (Kind can't pull from local Docker daemon)
-$ kind load docker-image platform-demo-app:latest --name platform-dev
+$ kind load docker-image platform-demo-app:v1 --name platform-dev
 
 // Apply manifests
 $ kubectl apply -f demo-app/k8s-manifests.yaml
