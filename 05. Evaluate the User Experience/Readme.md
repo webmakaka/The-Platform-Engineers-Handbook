@@ -111,49 +111,9 @@ kubectl apply -f https://raw.githubusercontent.com/open-telemetry/opentelemetry-
 
 ## Step-by-Step Instructions
 
-### Step 1: Understand the Demo Application
+### Step 1: Run the Demo Application Locally
 
-**Objective**: Review the demo app structure and deployment model
-
-**Commands**:
-
-```bash
-// Examine the Flask app
-$ cat demo-app/app.py
-
-// Review the Dockerfile
-$ cat demo-app/Dockerfile
-
-// Check Kubernetes manifests
-$ cat demo-app/k8s-manifests.yaml
-```
-
-**Expected Output**: Understanding of CRUD API endpoints, containerization approach, and K8s deployment strategy
-
-**Next Step**: Step 2 (Run the app locally)
-
----
-
-### Step 2: Run the Demo Application Locally
-
-**Objective**: Verify the app works outside containers
-
-**Command Option A - Direct Python**:
-
-```bash
-// Install Flask
-$ pip install flask
-
-$ Run the app
-$ python demo-app/app.py
-```
-
-**Expected Output**:
-```
-Starting Flask application on http://0.0.0.0:5000
-```
-
-**Command Option B - Docker**:
+<br/>
 
 ```bash
 // Build the image
@@ -181,51 +141,29 @@ $ curl http://localhost:5000/items
 # Output: {"data": [...], "status": 200}
 ```
 
-**Next Step**: Step 3 (Deploy to Kubernetes) OR Step 4 (Evaluate DevEx)
-
 ---
 
-### Step 3: Deploy to Kubernetes
-
-**Objective**: Deploy the demo app to a Kubernetes cluster
-
-**Prerequisites**:
-- Kubernetes cluster running (Kind or cloud)
-- kubectl configured to access the cluster
-
-**Commands**:
-
-**Option A - Using kubectl directly**:
+### Step 2: Deploy to Kubernetes
 
 ```bash
 // Build the Docker image locally
 $ docker build -t platform-demo-app:latest demo-app/
 
 // Load the image into Kind (Kind can't pull from local Docker daemon)
-$ kind load docker-image platform-demo-app:latest --name peh
+$ kind load docker-image platform-demo-app:latest --name platform-dev
 
 // Apply manifests
 $ kubectl apply -f demo-app/k8s-manifests.yaml
-
-// Verify deployment
-$ kubectl get pods -l app=platform-demo-app
-$ kubectl get svc platform-demo-app
-$ kubectl get hpa platform-demo-app-hpa
 ```
 
-**Option B - Using the self-service script**:
-
-```bash
-// Make the script executable
-$ chmod +x platform-deploy.sh
-
-// Deploy (requires ArgoCD setup)
-$ ./platform-deploy.sh myapp default dev
-```
+<br/>
 
 **Verify Deployment**:
 
 ```bash
+$ kubectl get svc platform-demo-app
+$ kubectl get hpa platform-demo-app-hpa
+
 // Check pod status
 $ kubectl get pods -l app=platform-demo-app
 
@@ -239,6 +177,8 @@ $ kubectl port-forward svc/platform-demo-app 5000:80
 $ curl http://localhost:5000/health
 ```
 
+<br/>
+
 **Monitor HPA Scaling**:
 
 ```bash
@@ -250,6 +190,8 @@ $ kubectl run -it --rm debug --image=alpine --restart=Never -- sh
 # Inside the pod:
 while true; do wget -q -O- http://platform-demo-app; done
 ```
+
+<br/>
 
 > **Note**: Press Ctrl+C to stop the watch command after observing the scaling behavior.
 
